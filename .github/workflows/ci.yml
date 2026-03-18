@@ -23,5 +23,8 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /BoardingHouse
+          NEXT_PUBLIC_STATIC_EXPORT: "1"
         run: yarn build
 

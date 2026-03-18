@@ -37,6 +37,9 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build (static export)
+        env:
+          NEXT_PUBLIC_BASE_PATH: /BoardingHouse
+          NEXT_PUBLIC_STATIC_EXPORT: "1"
         run: yarn build
 
       - name: Upload artifact
