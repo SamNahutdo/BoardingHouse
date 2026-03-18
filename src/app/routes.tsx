@@ -11,7 +11,10 @@ import { ProfilePage } from './pages/ProfilePage';
 import { MapPage } from './pages/MapPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
-export const router = createBrowserRouter([
+const basename = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
+export const router = createBrowserRouter(
+  [
   {
     path: '/',
     Component: Layout,
@@ -28,4 +31,6 @@ export const router = createBrowserRouter([
       { path: '*', Component: NotFoundPage },
     ],
   },
-]);
+  ],
+  { basename }
+);

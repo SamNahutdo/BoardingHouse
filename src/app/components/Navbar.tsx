@@ -24,6 +24,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   const { theme, setTheme } = useTheme();
   const { mode, user, isAuthenticated, logout } = useUser();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
   const userMenuItems = [
     { path: '/', label: 'Home' },
@@ -43,7 +44,15 @@ export function Navbar({ onMenuClick }: NavbarProps) {
 
   const menuItems = mode === 'user' ? userMenuItems : ownerMenuItems;
 
-  const isActive = (path: string) => location.pathname === path;
+  const normalize = (p: string) => {
+    let s = p;
+    if (basePath && s.startsWith(basePath)) s = s.slice(basePath.length);
+    // remove trailing slash (except for root)
+    s = s.length > 1 ? s.replace(/\/+$/, '') : s;
+    return s;
+  };
+
+  const isActive = (path: string) => normalize(location.pathname) === normalize(path);
 
   const handleLogout = () => {
     logout();
