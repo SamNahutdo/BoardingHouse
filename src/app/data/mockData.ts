@@ -24,6 +24,17 @@ export interface Booking {
   totalPrice: number;
 }
 
+export interface Review {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  guestName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  verified: boolean;
+}
+
 export const mockProperties: Property[] = [
   {
     id: '1',
@@ -168,3 +179,86 @@ export const ownerStats = {
   totalReviews: 156,
   averageRating: 4.7,
 };
+
+export const mockReviews: Review[] = [
+  {
+    id: 'r1',
+    propertyId: '1',
+    propertyName: 'Cozy Beach House',
+    guestName: 'Maria Santos',
+    rating: 5,
+    comment: 'Absolutely stunning location! The ocean views were breathtaking. The host was very welcoming and the property was immaculate.',
+    date: '2026-03-15',
+    verified: true,
+  },
+  {
+    id: 'r2',
+    propertyId: '1',
+    propertyName: 'Cozy Beach House',
+    guestName: 'John Dela Cruz',
+    rating: 4,
+    comment: 'Great stay overall. The beach access is amazing but the WiFi could be better. Still would recommend!',
+    date: '2026-03-10',
+    verified: true,
+  },
+  {
+    id: 'r3',
+    propertyId: '2',
+    propertyName: 'Modern City Apartment',
+    guestName: 'Sarah Johnson',
+    rating: 4.5,
+    comment: 'Perfect location for exploring the city. Very clean and modern. Bathroom could use some updates but overall great value.',
+    date: '2026-03-05',
+    verified: true,
+  },
+  {
+    id: 'r4',
+    propertyId: '3',
+    propertyName: 'Tropical Garden Villa',
+    guestName: 'Robert Lee',
+    rating: 5,
+    comment: 'Luxury experience at its finest! The villa is absolutely beautiful with stunning gardens. Worth every penny!',
+    date: '2026-02-28',
+    verified: true,
+  },
+  {
+    id: 'r5',
+    propertyId: '5',
+    propertyName: 'Beachfront Bungalow',
+    guestName: 'Anna Garcia',
+    rating: 4.8,
+    comment: 'Wonderful beachfront experience. The bungalow is charming and the beach access is incredible. Kayaks were a nice bonus!',
+    date: '2026-02-20',
+    verified: true,
+  },
+  {
+    id: 'r6',
+    propertyId: '4',
+    propertyName: 'Hillside Retreat',
+    guestName: 'James Wilson',
+    rating: 4.7,
+    comment: 'Peaceful and serene. Perfect for a relaxing getaway. The hillside views at sunset were magical.',
+    date: '2026-02-15',
+    verified: true,
+  },
+  {
+    id: 'r7',
+    propertyId: '6',
+    propertyName: 'Countryside Cottage',
+    guestName: 'Emily Chen',
+    rating: 4.6,
+    comment: 'Charming cottage in a lovely countryside setting. Great value for money. Would stay again!',
+    date: '2026-02-10',
+    verified: true,
+  },
+  {
+    id: 'r8',
+    propertyId: '2',
+    propertyName: 'Modern City Apartment',
+    guestName: 'Michael Brown',
+    rating: 4.4,
+    comment: 'Good location and modern amenities. The parking situation could be clearer but overall a decent stay.',
+    date: '2026-02-05',
+    verified: true,
+  },
+];

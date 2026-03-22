@@ -1,11 +1,11 @@
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, Star, MapPin, Wifi, Wind, UtensilsCrossed, Waves, Users, BedDouble, Bath } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Wifi, Wind, UtensilsCrossed, Waves, Users, BedDouble, Bath, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
-import { mockProperties } from '../data/mockData';
+import { mockProperties, mockReviews } from '../data/mockData';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { AuthDialog } from '../components/AuthDialog';
 import { useUser } from '../contexts/UserContext';
 import { toast } from 'sonner';
@@ -16,6 +16,19 @@ export function PropertyDetailPage() {
   const { isAuthenticated } = useUser();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const property = mockProperties.find((p) => p.id === id);
+  const reviewsRef = useRef<HTMLDivElement | null>(null);
+
+  // Get reviews for this specific property
+  const propertyReviews = mockReviews.filter(r => r.propertyId === id);
+  
+  // Calculate average rating from reviews
+  const avgRating = propertyReviews.length > 0 
+    ? (propertyReviews.reduce((sum, r) => sum + r.rating, 0) / propertyReviews.length).toFixed(1)
+    : property?.rating || 0;
+
+  const scrollToReviews = () => {
+    reviewsRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   if (!property) {
     return (
@@ -87,7 +100,7 @@ export function PropertyDetailPage() {
                 <h1 className="text-3xl font-bold">{property.name}</h1>
                 <div className="flex items-center gap-1 bg-accent px-3 py-1 rounded-lg">
                   <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{property.rating}</span>
+                  <span className="font-semibold">{avgRating}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -177,6 +190,88 @@ export function PropertyDetailPage() {
                 </div>
               </motion.div>
             )}
+
+            {/* Reviews Section */}
+            <motion.div
+              ref={reviewsRef}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <h3 className="font-semibold text-xl mb-4">Guest Reviews</h3>
+              {(() => {
+                if (propertyReviews.length === 0) {
+                  return (
+                    <Card className="p-6 text-center">
+                      <p className="text-muted-foreground">No reviews yet. Be the first to review this property!</p>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-bold">{avgRating}</span>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i <= Math.round(parseFloat(avgRating as string))
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Based on {propertyReviews.length} {propertyReviews.length === 1 ? 'review' : 'reviews'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {propertyReviews.map((review, index) => (
+                      <Card key={review.id} className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-semibold">{review.guestName}</p>
+                            <div className="flex gap-1 mt-1">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${
+                                    i <= review.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          {review.verified && (
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950 px-2 py-1 rounded">
+                              <CheckCircle className="w-3 h-3" />
+                              Verified
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{review.comment}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(review.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
+            </motion.div>
           </div>
 
           {/* Booking Card */}
@@ -196,10 +291,13 @@ export function PropertyDetailPage() {
                 </div>
                 <div className="flex items-center gap-1 text-sm">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{property.rating}</span>
-                  <span className="text-muted-foreground ml-1">
-                    (24 reviews)
-                  </span>
+                  <span className="font-semibold">{avgRating}</span>
+                  <button 
+                    onClick={scrollToReviews}
+                    className="text-muted-foreground ml-1 hover:text-green-600 dark:hover:text-green-500 cursor-pointer transition-colors"
+                  >
+                    ({propertyReviews.length} {propertyReviews.length === 1 ? 'review' : 'reviews'})
+                  </button>
                 </div>
               </div>
 

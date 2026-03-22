@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { Star, MapPin } from 'lucide-react';
-import { Property } from '../data/mockData';
+import { Property, mockReviews } from '../data/mockData';
 import { Card } from './ui/card';
 
 interface PropertyCardProps {
@@ -9,6 +9,13 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, onClick }: PropertyCardProps) {
+  // Get reviews for this property
+  const propertyReviews = mockReviews.filter(r => r.propertyId === property.id);
+  
+  // Calculate average rating from reviews
+  const avgRating = propertyReviews.length > 0 
+    ? (propertyReviews.reduce((sum, r) => sum + r.rating, 0) / propertyReviews.length).toFixed(1)
+    : property.rating;
   return (
     <motion.div
       whileHover={{ scale: 1.03, y: -5 }}
@@ -27,9 +34,14 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
           />
           {/* Rating Badge */}
-          <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="font-semibold text-sm">{property.rating}</span>
+          <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-3 py-2 rounded-lg flex flex-col items-end gap-1 shadow-lg">
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-semibold text-sm">{avgRating}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {propertyReviews.length} {propertyReviews.length === 1 ? 'review' : 'reviews'}
+            </span>
           </div>
         </div>
 
