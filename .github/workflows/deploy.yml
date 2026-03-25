@@ -50,12 +50,29 @@ jobs:
           mkdir -p ./out_publish
 
           # Copy everything first (this should include `index.html` at the root when it exists).
-          cp -r ./out/* ./out_publish/
+          cp -r ./out/* ./out_publish/ || true
 
           # If Next also exported into `out/BoardingHouse/`, overlay those files on top
           # so `/_next/*` assets resolve under the correct basePath.
           if [ -d "./out/BoardingHouse" ]; then
-            cp -r ./out/BoardingHouse/* ./out_publish/
+            cp -r ./out/BoardingHouse/* ./out_publish/ || true
+          fi
+
+          # Some Next exports place the home route under `index/index.html` instead of `index.html`.
+          # Ensure GitHub Pages always has `index.html` at the publish root.
+          if [ ! -f ./out_publish/index.html ] && [ -f ./out_publish/index/index.html ]; then
+            cp ./out_publish/index/index.html ./out_publish/index.html
+          fi
+          if [ ! -f ./out_publish/index.html ] && [ -f ./out_publish/BoardingHouse/index/index.html ]; then
+            cp ./out_publish/BoardingHouse/index/index.html ./out_publish/index.html
+          fi
+
+          # Flatten `_next` if it ended up nested.
+          if [ ! -d ./out_publish/_next ] && [ -d ./out_publish/BoardingHouse/_next ]; then
+            cp -r ./out_publish/BoardingHouse/_next ./out_publish/_next
+          fi
+          if [ ! -d ./out_publish/_next ] && [ -d ./out_publish/index/_next ]; then
+            cp -r ./out_publish/index/_next ./out_publish/_next
           fi
 
       - name: Upload artifact
