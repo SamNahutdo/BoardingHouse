@@ -24,7 +24,9 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
           <img
             src={property.image}
             alt={property.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            // Only animate the image on devices that support hover (desktop).
+            // On touch devices, `group-hover` can trigger on tap and looks like a zoom.
+            className="w-full h-full object-cover lg:group-hover:scale-110 transition-transform duration-300"
           />
           {/* Rating Badge */}
           <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">

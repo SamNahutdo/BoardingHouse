@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#16a34a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g)"/>
+  <rect x="60" y="60" width="1080" height="680" rx="28" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" stroke-width="3"/>
+  <text x="600" y="420" font-size="56" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="white" font-weight="700">
+    Boarding House
+  </text>
+  <text x="600" y="485" font-size="30" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="rgba(255,255,255,0.95)">
+    Placeholder image
+  </text>
+  <text x="600" y="565" font-size="22" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="rgba(255,255,255,0.85)">
+    Replace with your real pics in /public/pics
+  </text>
+</svg>
+
