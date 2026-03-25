@@ -42,10 +42,26 @@ jobs:
           NEXT_PUBLIC_STATIC_EXPORT: "1"
         run: yarn build
 
+      - name: Prepare artifact
+        # Next's `basePath` can cause the export to land under `out/<basePath>/`.
+        # GitHub Pages expects the site root to be the artifact root.
+        run: |
+          rm -rf ./out_publish
+          mkdir -p ./out_publish
+
+          # Copy everything first (this should include `index.html` at the root when it exists).
+          cp -r ./out/* ./out_publish/
+
+          # If Next also exported into `out/BoardingHouse/`, overlay those files on top
+          # so `/_next/*` assets resolve under the correct basePath.
+          if [ -d "./out/BoardingHouse" ]; then
+            cp -r ./out/BoardingHouse/* ./out_publish/
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./out"
+          path: "./out_publish"
 
       - name: Deploy
         id: deployment
