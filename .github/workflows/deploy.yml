@@ -28,10 +28,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
+          cache: pnpm
 
       - name: Install
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -40,7 +40,7 @@ jobs:
         env:
           NEXT_PUBLIC_BASE_PATH: /BoardingHouse
           NEXT_PUBLIC_STATIC_EXPORT: "1"
-        run: yarn build
+        run: pnpm build
 
       - name: Prepare artifact
         # Next's `basePath` can cause the export to land under `out/<basePath>/`.
@@ -74,6 +74,9 @@ jobs:
           if [ ! -d ./out_publish/_next ] && [ -d ./out_publish/index/_next ]; then
             cp -r ./out_publish/index/_next ./out_publish/_next
           fi
+
+          # For SPA routing, make 404.html serve the app so react-router can handle client-side routes
+          cp ./out_publish/index.html ./out_publish/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
