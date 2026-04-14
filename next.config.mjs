@@ -19,7 +19,7 @@ const nextConfig = {
     if (isServer) {
       config.plugins.push({
         name: 'CopyServerChunksPlugin',
-        apply(compiler) {
+        apply: function(compiler) {
           compiler.hooks.afterEmit.tap('CopyServerChunksPlugin', () => {
             const outputPath = compiler.options.output.path;
             const chunksPath = path.join(outputPath, 'chunks');
