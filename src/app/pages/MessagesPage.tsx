@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Send, User } from 'lucide-react';
+import { MessageCircle, Send, User, Video, Phone, Mic, MicOff, VideoOff, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useUser } from '../contexts/UserContext';
 import { Card } from '../components/ui/card';
@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
+import { useSearchParams } from 'react-router';
 
 interface Message {
   id: string;
@@ -63,10 +64,26 @@ const mockMessages: Message[] = [
 
 export function MessagesPage() {
   const { user, mode } = useUser();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(true);
+
+  // Check if VC was requested from URL
+  useEffect(() => {
+    const vcParam = searchParams.get('vc');
+    if (vcParam === 'true' && conversations.length > 0) {
+      // Auto-select first conversation and start VC
+      setSelectedConversation(conversations[0]);
+      setIsVideoCallActive(true);
+      // Remove the vc parameter from URL
+      setSearchParams({});
+    }
+  }, [searchParams, conversations, setSearchParams]);
 
   useEffect(() => {
     if (!user) return;
@@ -132,6 +149,24 @@ export function MessagesPage() {
 
     setMessages(prev => [...prev, message]);
     setNewMessage('');
+  };
+
+  const handleStartVideoCall = () => {
+    setIsVideoCallActive(true);
+  };
+
+  const handleEndVideoCall = () => {
+    setIsVideoCallActive(false);
+    setIsMicOn(true);
+    setIsVideoOn(true);
+  };
+
+  const toggleMic = () => {
+    setIsMicOn(!isMicOn);
+  };
+
+  const toggleVideo = () => {
+    setIsVideoOn(!isVideoOn);
   };
 
   if (!user) {
@@ -222,7 +257,7 @@ export function MessagesPage() {
                           .find(name => name !== user.name)?.[0] || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold">
                         {selectedConversation.participantNames.find(name => name !== user.name)}
                       </h3>
@@ -230,6 +265,15 @@ export function MessagesPage() {
                         {mode === 'owner' ? 'Guest' : 'Property Owner'}
                       </p>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleStartVideoCall}
+                      className="text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      Video Call
+                    </Button>
                   </div>
 
                   <div className="flex-1 overflow-y-auto mb-4 space-y-4">
@@ -304,6 +348,98 @@ export function MessagesPage() {
           </div>
         </div>
       </div>
+
+      {/* Video Call Overlay */}
+      {isVideoCallActive && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-background rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+          >
+            {/* Video Call Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback>
+                    {selectedConversation?.participantNames
+                      .find(name => name !== user.name)?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold">
+                    {selectedConversation?.participantNames.find(name => name !== user.name)}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Video call in progress...</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEndVideoCall}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Video Area */}
+            <div className="relative bg-gray-900 aspect-video flex items-center justify-center">
+              {/* Mock video interface */}
+              <div className="text-center text-white">
+                <div className="w-32 h-32 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <User className="h-16 w-16 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">
+                  {selectedConversation?.participantNames.find(name => name !== user.name)}
+                </h3>
+                <p className="text-gray-400">Video call active</p>
+              </div>
+
+              {/* Self video thumbnail */}
+              <div className="absolute bottom-4 right-4 w-32 h-24 bg-gray-800 rounded-lg border-2 border-white flex items-center justify-center">
+                <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Call Controls */}
+            <div className="flex items-center justify-center gap-4 p-6 bg-background">
+              <Button
+                variant={isMicOn ? "outline" : "destructive"}
+                size="lg"
+                onClick={toggleMic}
+                className="rounded-full w-12 h-12 p-0"
+              >
+                {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+              </Button>
+              <Button
+                variant={isVideoOn ? "outline" : "destructive"}
+                size="lg"
+                onClick={toggleVideo}
+                className="rounded-full w-12 h-12 p-0"
+              >
+                {isVideoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+              </Button>
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={handleEndVideoCall}
+                className="rounded-full w-12 h-12 p-0 bg-red-600 hover:bg-red-700"
+              >
+                <Phone className="h-5 w-5" />
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

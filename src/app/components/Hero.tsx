@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Search } from 'lucide-react';
+import { Search, MessageCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useUser } from '../contexts/UserContext';
 import { Button } from './ui/button';
@@ -34,14 +34,32 @@ export function Hero() {
             <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Welcome back! Track and manage all your listings with ease
             </p>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                size="lg"
-                className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-full px-8"
-                onClick={() => navigate('/add-property')}
-              >
-                Add New Property
-              </Button>
+            <motion.div 
+              className="flex gap-4 justify-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-full px-8"
+                  onClick={() => navigate('/add-property')}
+                >
+                  Add New Property
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full"
+                  onClick={() => navigate('/messages')}
+                >
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  Messages
+                </Button>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
@@ -91,6 +109,24 @@ export function Hero() {
               </Button>
             </div>
           </motion.form>
+
+          {/* Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            className="flex gap-4 justify-center mt-6"
+          >
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full"
+              onClick={() => navigate('/messages')}
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Messages
+            </Button>
+          </motion.div>
         </motion.div>
       </div>
     </div>

@@ -302,11 +302,19 @@ export function PropertyDetailPage() {
               <Card className="p-6 rounded-2xl">
                 <h3 className="font-semibold text-xl mb-4">Contact owner / boarders</h3>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <Button variant="outline" className="justify-start rounded-xl">
+                  <Button 
+                    variant="outline" 
+                    className="justify-start rounded-xl"
+                    onClick={() => navigate('/messages')}
+                  >
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Message owner
                   </Button>
-                  <Button variant="outline" className="justify-start rounded-xl">
+                  <Button 
+                    variant="outline" 
+                    className="justify-start rounded-xl"
+                    onClick={() => navigate('/messages?vc=true')}
+                  >
                     <Video className="h-4 w-4 mr-2" />
                     Start VC
                   </Button>
