@@ -24,20 +24,16 @@ export interface Booking {
   totalPrice: number;
 }
 
-// Next/Vercel-friendly: images must come from `public/`.
 const PLACEHOLDER_IMAGE = '/pics/placeholder.svg';
 
 const rawMockProperties: Property[] = [
-  // NOTE: `image` points to `/public/pics/` so it works on Vercel/Next.
-  // Replace/add your real pictures using the same filenames:
-  // - /public/pics/listing-01.png ... /public/pics/listing-30.png
   {
     id: '1',
     name: 'Tagbilaran Courtyard Suite - Cogon',
     location: 'Tagbilaran City, Bohol - Cogon',
     price: 2100,
     rating: 4.6,
-    image: '/pics/_Team_iDCare.png',
+    image: '/pics/IMG_5464.JPG',
     ownerId: 'owner1',
     description:
       'A calm courtyard-style suite for travelers who want a quiet base in Tagbilaran, with comfortable rooms and a practical kitchen setup.',
@@ -52,7 +48,7 @@ const rawMockProperties: Property[] = [
     location: 'Tagbilaran City, Bohol - Booy',
     price: 1900,
     rating: 4.4,
-    image: '/pics/listing-02.png',
+    image: '/pics/IMG_5464.JPG',
     ownerId: 'owner1',
     description:
       'A breezy townhouse with easy access to daily essentials, designed for guests who want comfort and simple, home-like living.',
@@ -67,7 +63,7 @@ const rawMockProperties: Property[] = [
     location: 'Tagbilaran City, Bohol - Dampas (Near Bay Walk)',
     price: 1800,
     rating: 4.5,
-    image: '/pics/listing-03.png',
+    image: '/pics/IMG_5464.JPG',
     ownerId: 'owner1',
     description:
       'A compact studio for solo travelers or couples, with reliable WiFi and a relaxed vibe close to Tagbilaran’s waterfront areas.',
@@ -232,7 +228,7 @@ const rawMockProperties: Property[] = [
     location: 'Dauis, Bohol - Dao (Poolside)',
     price: 4200,
     rating: 4.9,
-    image: 'src/app/data/pics/_Team_iDCare.png',
+    image: '/pics/listing-14.png',
     ownerId: 'owner1',
     description:
       'A poolside villa built for downtime—comfortable bedrooms, easy gatherings, and amenities that fit families and friends.',
@@ -484,10 +480,12 @@ const rawMockProperties: Property[] = [
 ];
 
 // Ensure every listing has a working image URL in production.
-export const mockProperties: Property[] = rawMockProperties.map((p) => ({
-  ...p,
-  image: PLACEHOLDER_IMAGE,
-}));
+// NOTE: Uncomment the following line to use placeholder images, but comment it out to use real images from the data above.
+// export const mockProperties: Property[] = rawMockProperties.map((p) => ({
+//   ...p,
+//   image: PLACEHOLDER_IMAGE,
+// }));
+export const mockProperties: Property[] = rawMockProperties;
 
 export const mockBookings: Booking[] = [
   {
