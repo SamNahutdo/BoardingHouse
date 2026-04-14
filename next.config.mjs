@@ -15,6 +15,9 @@ const nextConfig = {
   // Ensure all generated asset URLs (CSS/JS/images under `/_next/`) are rooted correctly on GitHub Pages.
   assetPrefix: basePath,
   trailingSlash: true,
+  images: {
+    unoptimized: true, // Required for static export
+  },
   webpack(config, { isServer }) {
     if (isServer) {
       config.plugins.push({
@@ -36,6 +39,43 @@ const nextConfig = {
           });
         },
       });
+
+      // Copy all public files to output directory for static export
+      if (shouldStaticExport) {
+        config.plugins.push({
+          name: 'CopyPublicFilesPlugin',
+          apply: function(compiler) {
+            compiler.hooks.afterEmit.tap('CopyPublicFilesPlugin', () => {
+              const outputPath = compiler.options.output.path;
+              const publicPath = path.join(process.cwd(), 'public');
+
+              function copyDir(src, dest) {
+                if (!fs.existsSync(dest)) {
+                  fs.mkdirSync(dest, { recursive: true });
+                }
+
+                const files = fs.readdirSync(src);
+                files.forEach(file => {
+                  const srcPath = path.join(src, file);
+                  const destPath = path.join(dest, file);
+                  const stat = fs.statSync(srcPath);
+
+                  if (stat.isDirectory()) {
+                    copyDir(srcPath, destPath);
+                  } else {
+                    fs.copyFileSync(srcPath, destPath);
+                  }
+                });
+              }
+
+              // Copy all files from public directory to output directory
+              if (fs.existsSync(publicPath)) {
+                copyDir(publicPath, outputPath);
+              }
+            });
+          },
+        });
+      }
     }
     return config;
   },
