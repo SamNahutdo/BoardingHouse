@@ -23,37 +23,38 @@ export function SearchPage() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(true);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
-  const [priceRange, setPriceRange] = useState([0, 5000]);
+  const [priceRange, setPriceRange] = useState([0, 8000]);
   const [minRating, setMinRating] = useState(0);
 
   useEffect(() => {
-    // Simulate loading
     const timer = setTimeout(() => {
       filterProperties();
       setLoading(false);
-    }, 800);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery, priceRange, minRating]);
 
   const filterProperties = () => {
     let filtered = mockProperties;
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    // Search filter
-    if (searchQuery.trim()) {
+    if (normalizedQuery) {
       filtered = filtered.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.location.toLowerCase().includes(searchQuery.toLowerCase())
+          p.name.toLowerCase().includes(normalizedQuery) ||
+          p.location.toLowerCase().includes(normalizedQuery) ||
+          p.municipality.toLowerCase().includes(normalizedQuery) ||
+          p.address?.toLowerCase().includes(normalizedQuery) ||
+          p.description?.toLowerCase().includes(normalizedQuery) ||
+          p.amenities?.some((amenity) => amenity.toLowerCase().includes(normalizedQuery)),
       );
     }
 
-    // Price filter
     filtered = filtered.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
+      (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
     );
 
-    // Rating filter
     filtered = filtered.filter((p) => p.rating >= minRating);
 
     setFilteredProperties(filtered);
@@ -61,7 +62,7 @@ export function SearchPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearchParams({ q: searchQuery });
+    setSearchParams(searchQuery ? { q: searchQuery } : {});
     setLoading(true);
   };
 
@@ -70,21 +71,20 @@ export function SearchPage() {
   };
 
   const resetFilters = () => {
-    setPriceRange([0, 5000]);
+    setPriceRange([0, 8000]);
     setMinRating(0);
   };
 
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Search Header */}
         <div className="mb-8">
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-3xl font-bold mb-6"
           >
-            Search Properties
+            Search Boarding Houses
           </motion.h1>
 
           <div className="flex gap-2 mb-4">
@@ -92,7 +92,7 @@ export function SearchPage() {
               <div className="flex gap-2">
                 <Input
                   type="text"
-                  placeholder="Search location, property..."
+                  placeholder="Search house, municipality, address, or description"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1"
@@ -106,7 +106,6 @@ export function SearchPage() {
               </div>
             </form>
 
-            {/* Filters Sheet */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -119,14 +118,13 @@ export function SearchPage() {
                   <SheetDescription>Refine your search results</SheetDescription>
                 </SheetHeader>
                 <div className="py-6 space-y-6">
-                  {/* Price Range */}
                   <div>
                     <label className="text-sm font-medium mb-3 block">
                       Price Range: ₱{priceRange[0]} - ₱{priceRange[1]}
                     </label>
                     <Slider
                       min={0}
-                      max={5000}
+                      max={8000}
                       step={100}
                       value={priceRange}
                       onValueChange={setPriceRange}
@@ -134,7 +132,6 @@ export function SearchPage() {
                     />
                   </div>
 
-                  {/* Minimum Rating */}
                   <div>
                     <label className="text-sm font-medium mb-3 block">
                       Minimum Rating: {minRating.toFixed(1)}
@@ -148,11 +145,7 @@ export function SearchPage() {
                     />
                   </div>
 
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={resetFilters}
-                  >
+                  <Button variant="outline" className="w-full" onClick={resetFilters}>
                     <X className="h-4 w-4 mr-2" />
                     Reset Filters
                   </Button>
@@ -161,25 +154,21 @@ export function SearchPage() {
             </Sheet>
           </div>
 
-          {/* Results Count */}
           {!loading && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-muted-foreground"
             >
-              {filteredProperties.length} propert
-              {filteredProperties.length === 1 ? 'y' : 'ies'} found
+              {filteredProperties.length} boarding house
+              {filteredProperties.length === 1 ? '' : 's'} found
             </motion.p>
           )}
         </div>
 
-        {/* Results Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <PropertyCardSkeleton key={i} />
-              ))
+            ? Array.from({ length: 6 }).map((_, i) => <PropertyCardSkeleton key={i} />)
             : filteredProperties.map((property, index) => (
                 <motion.div
                   key={property.id}
@@ -195,7 +184,6 @@ export function SearchPage() {
               ))}
         </div>
 
-        {/* Empty State */}
         {!loading && filteredProperties.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -203,14 +191,15 @@ export function SearchPage() {
             className="text-center py-16"
           >
             <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold mb-2">No properties found</h3>
+            <h3 className="text-xl font-semibold mb-2">No boarding houses found</h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your search or filters
+              Try adjusting your search, price, rating, or description terms.
             </p>
             <Button
               variant="outline"
               onClick={() => {
                 setSearchQuery('');
+                setSearchParams({});
                 resetFilters();
               }}
             >

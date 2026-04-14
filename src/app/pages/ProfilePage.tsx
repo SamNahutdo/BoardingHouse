@@ -1,4 +1,4 @@
-import { User, Mail, Phone, MapPin, Edit, Users } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit, Users, Clock3, BookOpenText } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useUser } from '../contexts/UserContext';
 import { Card } from '../components/ui/card';
@@ -6,14 +6,39 @@ import { Button } from '../components/ui/button';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AuthDialog } from '../components/AuthDialog';
+import { Booking } from '../data/mockData';
+import { Badge } from '../components/ui/badge';
+import { ensureSeedBookings, getStoredBookings } from '../data/bookingStorage';
 
 export function ProfilePage() {
   const { mode, toggleMode, isAuthenticated, user } = useUser();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
-  // Show login prompt if not authenticated
+  useEffect(() => {
+    ensureSeedBookings();
+    const allBookings = getStoredBookings();
+    const userBookings = user
+      ? allBookings.filter((booking) => booking.guestEmail === user.email)
+      : [];
+    setBookings(userBookings);
+  }, [user]);
+
+  const pendingBookings = useMemo(
+    () => bookings.filter((booking) => booking.status === 'pending'),
+    [bookings],
+  );
+
+  const bookedList = useMemo(
+    () =>
+      bookings.filter(
+        (booking) => booking.status === 'pending' || booking.status === 'confirmed',
+      ),
+    [bookings],
+  );
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -25,16 +50,13 @@ export function ProfilePage() {
           <p className="text-muted-foreground mb-6">
             Create an account or sign in to manage your bookings and properties.
           </p>
-          <Button 
+          <Button
             onClick={() => setAuthDialogOpen(true)}
             className="bg-green-600 hover:bg-green-700"
           >
             Sign In / Sign Up
           </Button>
-          <AuthDialog 
-            open={authDialogOpen} 
-            onOpenChange={setAuthDialogOpen}
-          />
+          <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
         </div>
       </div>
     );
@@ -43,7 +65,7 @@ export function ProfilePage() {
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -52,7 +74,6 @@ export function ProfilePage() {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -62,7 +83,6 @@ export function ProfilePage() {
         </motion.h1>
 
         <div className="space-y-6">
-          {/* Profile Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -70,14 +90,12 @@ export function ProfilePage() {
           >
             <Card className="p-6 sm:p-8 rounded-2xl">
               <div className="flex flex-col sm:flex-row items-start gap-6">
-                {/* Avatar */}
                 <Avatar className="h-24 w-24">
                   <AvatarFallback className="bg-green-600 text-white text-2xl">
                     {getInitials(user?.name || 'User')}
                   </AvatarFallback>
                 </Avatar>
 
-                {/* User Info */}
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -111,7 +129,6 @@ export function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* Account Type Toggle */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -143,73 +160,81 @@ export function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* Stats Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <Card className="p-6 rounded-2xl">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock3 className="h-5 w-5 text-yellow-600" />
+                <h3 className="font-semibold text-lg">Pending books</h3>
+              </div>
+
+              {pendingBookings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No pending books right now.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {pendingBookings.map((booking) => (
+                    <div key={booking.id} className="rounded-xl bg-accent/40 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div className="font-medium">{booking.propertyName}</div>
+                        <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                          Pending
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {booking.description || 'Pending reservation awaiting completion.'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
             <Card className="p-6 rounded-2xl">
-              <h3 className="font-semibold text-lg mb-4">
-                {mode === 'owner' ? 'Owner Statistics' : 'Guest Statistics'}
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {mode === 'owner' ? (
-                  <>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-green-600 dark:text-green-500">
-                        3
-                      </p>
-                      <p className="text-sm text-muted-foreground">Properties</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-500">
-                        12
-                      </p>
-                      <p className="text-sm text-muted-foreground">Bookings</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-purple-600 dark:text-purple-500">
-                        4.7
-                      </p>
-                      <p className="text-sm text-muted-foreground">Rating</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-500">
-                        156
-                      </p>
-                      <p className="text-sm text-muted-foreground">Reviews</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-green-600 dark:text-green-500">
-                        8
-                      </p>
-                      <p className="text-sm text-muted-foreground">Bookings</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-500">
-                        5
-                      </p>
-                      <p className="text-sm text-muted-foreground">Reviews</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-purple-600 dark:text-purple-500">
-                        3
-                      </p>
-                      <p className="text-sm text-muted-foreground">Favorites</p>
-                    </div>
-                    <div className="text-center p-4 rounded-xl bg-accent/50">
-                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-500">
-                        2
-                      </p>
-                      <p className="text-sm text-muted-foreground">Wishlist</p>
-                    </div>
-                  </>
-                )}
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpenText className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold text-lg">Booked list</h3>
               </div>
+
+              {bookedList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Your active bookings will appear here after you book a boarding house.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {bookedList.map((booking) => (
+                    <div key={booking.id} className="rounded-xl border p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div>
+                          <div className="font-medium">{booking.propertyName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(booking.checkIn).toLocaleDateString()} -{' '}
+                            {new Date(booking.checkOut).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <Badge variant="secondary">
+                          {booking.paymentMethod === 'online'
+                            ? 'Online payment'
+                            : 'Pay on-site'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {booking.description || 'No booking description provided.'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </motion.div>
         </div>
