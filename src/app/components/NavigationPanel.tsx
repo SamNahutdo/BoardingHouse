@@ -30,55 +30,11 @@ export function NavigationPanel({ isVisible, onClose, destination, userLocation 
 
   useEffect(() => {
     if (isVisible && userLocation) {
-      fetchDirections();
-    }
-  }, [isVisible, userLocation, destination]);
-
-  const fetchDirections = async () => {
-    if (!userLocation) return;
-
-    setIsLoading(true);
-    try {
-      const origin = `${userLocation[0]},${userLocation[1]}`;
-      const dest = `${destination.coordinates[0]},${destination.coordinates[1]}`;
-
-      // Using Google Maps Directions API (you'll need to add your API key)
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&mode=driving&key=YOUR_API_KEY`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch directions');
-      }
-
-      const data = await response.json();
-
-      if (data.status === 'OK' && data.routes.length > 0) {
-        const route = data.routes[0];
-        const leg = route.legs[0];
-
-        setTotalDistance(leg.distance.text);
-        setTotalDuration(leg.duration.text);
-
-        const steps = leg.steps.map((step: any) => ({
-          instruction: step.html_instructions.replace(/<[^>]*>/g, ''), // Remove HTML tags
-          distance: step.distance.text,
-          duration: step.duration.text,
-          maneuver: step.maneuver,
-        }));
-
-        setDirections(steps);
-      } else {
-        // Fallback: Create simple directions
-        createSimpleDirections();
-      }
-    } catch (error) {
-      console.error('Error fetching directions:', error);
+      setIsLoading(true);
       createSimpleDirections();
-    } finally {
       setIsLoading(false);
     }
-  };
+  }, [isVisible, userLocation, destination]);
 
   const createSimpleDirections = () => {
     // Simple fallback directions
@@ -114,11 +70,6 @@ export function NavigationPanel({ isVisible, onClose, destination, userLocation 
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-  };
-
-  const openInMaps = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.coordinates[0]},${destination.coordinates[1]}`;
-    window.open(url, '_blank');
   };
 
   if (!isVisible) return null;
@@ -190,12 +141,6 @@ export function NavigationPanel({ isVisible, onClose, destination, userLocation 
           )}
         </div>
 
-        <div className="p-4 border-t">
-          <Button onClick={openInMaps} className="w-full bg-green-600 hover:bg-green-700">
-            <MapPin className="h-4 w-4 mr-2" />
-            Open in Google Maps
-          </Button>
-        </div>
       </Card>
     </div>
   );

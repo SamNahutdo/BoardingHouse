@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { AddPropertyPage } from './pages/AddPropertyPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MapPage } from './pages/MapPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const basename = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
@@ -24,6 +25,7 @@ export const router = createBrowserRouter(
       { path: 'property/:id', Component: PropertyDetailPage },
       { path: 'properties', Component: PropertiesPage },
       { path: 'bookings', Component: BookingsPage },
+      { path: 'messages', Component: MessagesPage },
       { path: 'dashboard', Component: DashboardPage },
       { path: 'add-property', Component: AddPropertyPage },
       { path: 'profile', Component: ProfilePage },

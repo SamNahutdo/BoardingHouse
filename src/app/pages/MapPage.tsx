@@ -1,10 +1,10 @@
 import { Card } from '../components/ui/card';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { LocateFixed, MapPin, Navigation, BadgeCheck } from 'lucide-react';
+import { LocateFixed, Navigation, BadgeCheck } from 'lucide-react';
 import { NavigationPanel } from '../components/NavigationPanel';
 import {
   mockProperties,
@@ -56,7 +56,6 @@ function MapFocus({ position }: { position: [number, number] }) {
 export function MapPage() {
   const [mapReady, setMapReady] = useState(false);
   const [selectedHouseId, setSelectedHouseId] = useState<string>(mockProperties[0]?.id ?? '');
-  const [geoMessage, setGeoMessage] = useState('Tap "Find & Navigate" to locate the nearest boarding house and get turn-by-turn directions!');
   const [showNavigation, setShowNavigation] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | undefined>();
   const selectedHouse =
@@ -66,16 +65,8 @@ export function MapPage() {
     setMapReady(true);
   }, []);
 
-  const googleMapsUrl = useMemo(() => {
-    const [lat, lng] = selectedHouse.coordinates;
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      `${lat},${lng}`,
-    )}`;
-  }, [selectedHouse.coordinates]);
-
   const findNearestHouse = () => {
     if (!navigator.geolocation) {
-      setGeoMessage('Geolocation is not supported in this browser.');
       return;
     }
 
@@ -112,14 +103,11 @@ export function MapPage() {
 
         if (nearest) {
           setSelectedHouseId(nearest.property.id);
-          setGeoMessage(
-            `Found ${nearest.property.name} (${nearest.distance.toFixed(1)} km away). Tap "Get Directions" to navigate!`,
-          );
           setShowNavigation(true);
         }
       },
       () => {
-        setGeoMessage('Location permission was denied, so nearest-house scan could not run.');
+        setShowNavigation(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -162,7 +150,6 @@ export function MapPage() {
                     </Marker>
                   ))}
 
-                  {/* Route line when navigation is active */}
                   {showNavigation && userLocation && (
                     <Polyline
                       positions={[userLocation, selectedHouse.coordinates]}
@@ -173,7 +160,6 @@ export function MapPage() {
                     />
                   )}
 
-                  {/* User location marker */}
                   {userLocation && (
                     <Marker
                       position={userLocation}
@@ -192,24 +178,14 @@ export function MapPage() {
                 </MapContainer>
               )}
 
-              <div className="absolute top-4 left-4 right-4 z-[500] flex flex-col sm:flex-row gap-3 sm:items-start sm:justify-between pointer-events-none">
-                <div className="bg-background/95 backdrop-blur rounded-2xl p-4 shadow-xl max-w-xl pointer-events-auto">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-5 w-5 text-green-600" />
-                    <h1 className="font-bold text-lg">Boarding house map</h1>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{geoMessage}</p>
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={findNearestHouse}
-                  className="bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg pointer-events-auto"
-                >
-                  <LocateFixed className="h-4 w-4 mr-2" />
-                  Find & Navigate to Nearest House
-                </Button>
-              </div>
+              <Button
+                type="button"
+                onClick={findNearestHouse}
+                className="absolute top-4 right-4 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg pointer-events-auto z-50"
+              >
+                <LocateFixed className="h-4 w-4 mr-2" />
+                Find & Navigate to Nearest House
+              </Button>
             </div>
           </Card>
         </div>
@@ -266,12 +242,6 @@ export function MapPage() {
                 <Navigation className="h-4 w-4 mr-2" />
                 Get Directions
               </Button>
-              <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="flex-1">
-                <Button variant="outline" className="w-full rounded-xl">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  View in Maps
-                </Button>
-              </a>
             </div>
           </Card>
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { X, Home, Map, Search, User, Building2, Calendar, LayoutDashboard, PlusCircle, Users, LogOut, LogIn } from 'lucide-react';
+import { X, Home, Map, Search, User, Building2, Calendar, LayoutDashboard, PlusCircle, Users, LogOut, LogIn, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useUser } from '../contexts/UserContext';
 import { Button } from './ui/button';
@@ -21,6 +21,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { path: '/', label: 'Home', icon: Home },
     { path: '/map', label: 'Map', icon: Map },
     { path: '/search', label: 'Search', icon: Search },
+    { path: '/messages', label: 'Messages', icon: MessageCircle },
     { path: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -28,6 +29,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { path: '/', label: 'Home', icon: Home },
     { path: '/properties', label: 'Properties', icon: Building2 },
     { path: '/bookings', label: 'Bookings', icon: Calendar },
+    { path: '/messages', label: 'Messages', icon: MessageCircle },
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/add-property', label: 'Add Property', icon: PlusCircle },
     { path: '/profile', label: 'Profile', icon: User },

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { Menu, Moon, Sun, User, LogOut } from 'lucide-react';
+import { Menu, Moon, Sun, User, LogOut, MessageCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useUser } from '../contexts/UserContext';
 import { Button } from './ui/button';
@@ -30,6 +30,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
     { path: '/', label: 'Home' },
     { path: '/map', label: 'Map' },
     { path: '/search', label: 'Search' },
+    { path: '/messages', label: 'Messages' },
     { path: '/profile', label: 'Profile' },
   ];
 
@@ -37,6 +38,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
     { path: '/', label: 'Home' },
     { path: '/properties', label: 'Properties' },
     { path: '/bookings', label: 'Bookings' },
+    { path: '/messages', label: 'Messages' },
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/add-property', label: 'Add Property' },
     { path: '/profile', label: 'Profile' },
