@@ -211,7 +211,7 @@ export function MapPage() {
             </div>
 
             <img
-              src={selectedHouse.image}
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}${selectedHouse.image}`}
               alt={selectedHouse.name}
               className="w-full h-64 rounded-2xl object-cover object-center mb-4"
             />
