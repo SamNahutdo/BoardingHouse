@@ -11,6 +11,7 @@ import {
   getPropertyAvailabilityLabel,
   isPropertyFullyBooked,
 } from '../data/mockData';
+import { useOSRM } from '../hooks/useOSRM';
 
 const icon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -60,6 +61,11 @@ export function MapPage() {
   const [userLocation, setUserLocation] = useState<[number, number] | undefined>();
   const selectedHouse =
     mockProperties.find((property) => property.id === selectedHouseId) ?? mockProperties[0];
+
+  const { route, isLoading, error } = useOSRM(
+    showNavigation && userLocation ? userLocation : undefined,
+    showNavigation ? selectedHouse.coordinates : undefined
+  );
 
   useEffect(() => {
     setMapReady(true);
@@ -150,12 +156,20 @@ export function MapPage() {
                     </Marker>
                   ))}
 
-                  {showNavigation && userLocation && (
+                  {showNavigation && userLocation && route?.geometry && (
+                    <Polyline
+                      positions={route.geometry}
+                      color="#3b82f6"
+                      weight={5}
+                      opacity={0.8}
+                    />
+                  )}
+                  {showNavigation && userLocation && !route?.geometry && (
                     <Polyline
                       positions={[userLocation, selectedHouse.coordinates]}
                       color="#16a34a"
                       weight={4}
-                      opacity={0.8}
+                      opacity={0.5}
                       dashArray="10, 10"
                     />
                   )}
@@ -288,6 +302,9 @@ export function MapPage() {
           address: selectedHouse.address || selectedHouse.location,
         }}
         userLocation={userLocation}
+        routeData={route}
+        isLoadingRoute={isLoading}
+        routeError={error}
       />
     </div>
   );

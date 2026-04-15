@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Navigation, MapPin, Clock, Route, ArrowRight, CheckCircle } from 'lucide-react';
-
-interface NavigationStep {
-  instruction: string;
-  distance: string;
-  duration: string;
-  maneuver?: string;
-}
+import { Navigation, Route, Clock, CheckCircle } from 'lucide-react';
+import { RouteData } from '../hooks/useOSRM';
 
 interface NavigationPanelProps {
   isVisible: boolean;
@@ -20,64 +13,27 @@ interface NavigationPanelProps {
     address: string;
   };
   userLocation?: [number, number];
+  routeData?: RouteData | null;
+  isLoadingRoute?: boolean;
+  routeError?: string | null;
 }
 
-export function NavigationPanel({ isVisible, onClose, destination, userLocation }: NavigationPanelProps) {
-  const [directions, setDirections] = useState<NavigationStep[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [totalDistance, setTotalDistance] = useState('');
-  const [totalDuration, setTotalDuration] = useState('');
-
-  useEffect(() => {
-    if (isVisible && userLocation) {
-      setIsLoading(true);
-      createSimpleDirections();
-      setIsLoading(false);
-    }
-  }, [isVisible, userLocation, destination]);
-
-  const createSimpleDirections = () => {
-    // Simple fallback directions
-    const distance = calculateDistance(userLocation!, destination.coordinates);
-    setTotalDistance(`${distance.toFixed(1)} km`);
-    setTotalDuration(`${Math.ceil(distance * 3)} mins`);
-
-    setDirections([
-      {
-        instruction: 'Head towards your destination',
-        distance: `${distance.toFixed(1)} km`,
-        duration: `${Math.ceil(distance * 3)} mins`,
-      },
-      {
-        instruction: 'Follow the main road to reach the boarding house',
-        distance: 'Final destination',
-        duration: 'Arriving soon',
-      },
-    ]);
-  };
-
-  const calculateDistance = (start: [number, number], end: [number, number]): number => {
-    const [lat1, lon1] = start;
-    const [lat2, lon2] = end;
-    const R = 6371; // Earth's radius in km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
+export function NavigationPanel({ 
+  isVisible, 
+  onClose, 
+  destination, 
+  userLocation,
+  routeData,
+  isLoadingRoute,
+  routeError
+}: NavigationPanelProps) {
+  
   if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl">
-        <div className="p-4 border-b">
+      <Card className="w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl flex flex-col">
+        <div className="p-4 border-b shrink-0">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Navigation className="h-5 w-5 text-green-600" />
@@ -93,54 +49,61 @@ export function NavigationPanel({ isVisible, onClose, destination, userLocation 
           </div>
         </div>
 
-        <div className="p-4 border-b bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Route className="h-4 w-4 text-blue-600" />
-              <span className="text-sm">{totalDistance}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-orange-600" />
-              <span className="text-sm">{totalDuration}</span>
+        {routeData && !isLoadingRoute && !routeError && (
+          <div className="p-4 border-b bg-muted/30 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Route className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium">{routeData.distance}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-orange-600" />
+                <span className="text-sm font-medium">{routeData.duration}</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="max-h-96 overflow-y-auto">
-          {isLoading ? (
-            <div className="p-4 text-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Getting directions...</p>
+        <div className="overflow-y-auto flex-1">
+          {!userLocation ? (
+            <div className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">Waiting for your location...</p>
             </div>
-          ) : (
-            <div className="p-2">
-              {directions.map((step, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mt-0.5">
-                    <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+          ) : isLoadingRoute ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-3"></div>
+              <p className="text-sm text-muted-foreground font-medium">Calculating best route...</p>
+            </div>
+          ) : routeError ? (
+            <div className="p-6 text-center bg-red-50 dark:bg-red-950/20 m-4 rounded-xl">
+              <p className="text-sm text-red-600 dark:text-red-400">{routeError}</p>
+              <p className="text-xs text-muted-foreground mt-2">Could not load directions.</p>
+            </div>
+          ) : routeData?.steps ? (
+            <div className="p-2 space-y-1">
+              {routeData.steps.map((step, index) => (
+                <div key={index} className="flex items-start gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mt-0.5 shadow-sm">
+                    <span className="text-xs font-bold text-green-700 dark:text-green-400">
                       {index + 1}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm leading-relaxed">{step.instruction}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
+                    <p className="text-sm font-medium leading-relaxed">{step.instruction}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary" className="text-[10px] uppercase font-semibold tracking-wider">
                         {step.distance}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {step.duration}
                       </Badge>
                     </div>
                   </div>
-                  {index === directions.length - 1 && (
+                  {index === routeData.steps.length - 1 && (
                     <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                   )}
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
         </div>
-
       </Card>
     </div>
   );
