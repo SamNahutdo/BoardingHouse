@@ -57,6 +57,7 @@ const mockMessages: Message[] = [
     senderName: 'Ana Garcia',
     receiverId: 'owner1',
     receiverName: 'Maria Santos',
+    content: 'Can I bring my pet?',
     timestamp: new Date(new Date().getTime() - 1000 * 60 * 60 * 24), // 1 day ago
     read: true,
   },
