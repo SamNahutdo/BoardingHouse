@@ -72,7 +72,9 @@ export function MapPage() {
   }, []);
 
   const findNearestHouse = () => {
+    setShowNavigation(true); // Instant UI feedback!
     if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
       return;
     }
 
@@ -109,10 +111,10 @@ export function MapPage() {
 
         if (nearest) {
           setSelectedHouseId(nearest.property.id);
-          setShowNavigation(true);
         }
       },
       () => {
+        alert("Please allow location access to find the nearest house.");
         setShowNavigation(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -195,10 +197,10 @@ export function MapPage() {
               <Button
                 type="button"
                 onClick={findNearestHouse}
-                className="absolute top-4 right-4 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg pointer-events-auto z-50"
+                className="absolute top-4 right-4 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg pointer-events-auto z-50 flex items-center justify-center transition-all active:scale-95"
               >
-                <LocateFixed className="h-4 w-4 mr-2" />
-                Find & Navigate to Nearest House
+                <LocateFixed className="h-2 w-2 mr-0" />
+                
               </Button>
             </div>
           </Card>
@@ -249,9 +251,30 @@ export function MapPage() {
 
             <div className="flex gap-3">
               <Button
-                onClick={() => setShowNavigation(true)}
-                className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl"
-                disabled={!userLocation}
+                onClick={() => {
+                  setShowNavigation(true); // Open panel immediately for instant UI feedback!
+                  
+                  if (userLocation) {
+                    return;
+                  }
+                  
+                  if (!navigator.geolocation) {
+                    alert("Geolocation is not supported by your browser");
+                    return;
+                  }
+                  
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      setUserLocation([position.coords.latitude, position.coords.longitude]);
+                    },
+                    (err) => {
+                      alert("Please allow location access to get directions.");
+                      setShowNavigation(false);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                  );
+                }}
+                className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl text-white shadow-md shadow-green-900/10 transition-all active:scale-95"
               >
                 <Navigation className="h-4 w-4 mr-2" />
                 Get Directions

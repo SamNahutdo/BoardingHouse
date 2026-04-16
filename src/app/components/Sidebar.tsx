@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { X, Home, Map, Search, User, Building2, Calendar, LayoutDashboard, PlusCircle, Users, LogOut, LogIn, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useUser } from '../contexts/UserContext';
@@ -14,6 +14,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { mode, toggleMode, isAuthenticated, user, logout } = useUser();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
@@ -27,11 +28,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const ownerMenuItems = [
     { path: '/', label: 'Home', icon: Home },
-    { path: '/properties', label: 'Properties', icon: Building2 },
-    { path: '/bookings', label: 'Bookings', icon: Calendar },
     { path: '/messages', label: 'Messages', icon: MessageCircle },
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/add-property', label: 'Add Property', icon: PlusCircle },
     { path: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -113,7 +111,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       {mode === 'user' ? 'Guest Mode' : 'Owner Mode'}
                     </span>
                   </div>
-                  <Switch checked={mode === 'owner'} onCheckedChange={toggleMode} />
+                  <Switch 
+                    checked={mode === 'owner'} 
+                    onCheckedChange={(checked) => {
+                      toggleMode();
+                      navigate(checked ? '/dashboard' : '/');
+                      onClose();
+                    }} 
+                  />
                 </div>
               </div>
 
