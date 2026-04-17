@@ -22,7 +22,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.from('properties').select('*');
     if (error) {
       console.error('Error fetching properties:', error);
-      setProperties([]);
+      setProperties(mockProperties);
     } else if (data) {
       const parsedData = data.map(item => {
         let parsedAmenities = item.amenities;
@@ -47,7 +47,11 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
           coordinates: parsedCoordinates
         };
       });
-      setProperties(parsedData as Property[]);
+
+      // Combine with mock properties (deduplicating by ID) to ensure the UI is never empty!
+      const dbIds = new Set(parsedData.map(d => d.id));
+      const missingMocks = mockProperties.filter(m => !dbIds.has(m.id));
+      setProperties([...missingMocks, ...parsedData] as Property[]);
     }
     setLoading(false);
   };
