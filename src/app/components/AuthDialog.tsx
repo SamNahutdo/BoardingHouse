@@ -45,15 +45,15 @@ export function AuthDialog({
     setLoginLoading(true);
 
     try {
-      const success = await login(loginEmail, loginPassword, accountType);
+      const result = await login(loginEmail, loginPassword, accountType);
       
-      if (success) {
+      if (result.success) {
         toast.success(`Welcome back! Logged in as ${accountType}`);
         onOpenChange(false);
         resetForms();
         onSuccess?.();
       } else {
-        toast.error('Invalid credentials. Please check your email, password, and account type.');
+        toast.error(result.error || 'Invalid credentials. Please check your email, password, and account type.');
       }
     } catch (error) {
       toast.error('An error occurred during login');
@@ -84,15 +84,15 @@ export function AuthDialog({
     setSignupLoading(true);
 
     try {
-      const success = await signup(signupEmail, signupPassword, signupName, accountType);
+      const result = await signup(signupEmail, signupPassword, signupName, accountType);
       
-      if (success) {
+      if (result.success) {
         toast.success(`Account created successfully! Welcome, ${signupName}`);
         onOpenChange(false);
         resetForms();
         onSuccess?.();
       } else {
-        toast.error('Email already exists. Please login instead.');
+        toast.error(result.error || 'Email already exists. Please login instead.');
       }
     } catch (error) {
       toast.error('An error occurred during signup');
