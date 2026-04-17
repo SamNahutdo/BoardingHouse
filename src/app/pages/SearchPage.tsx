@@ -35,7 +35,7 @@ export function SearchPage() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, priceRange, minRating]);
+  }, [searchQuery, priceRange, minRating, properties]);
 
   const filterProperties = () => {
     let filtered = properties;

@@ -169,7 +169,7 @@ export function PropertyDetailPage() {
           className="aspect-[16/9] rounded-3xl overflow-hidden mb-8 shadow-2xl"
         >
           <img
-            src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}${property.image}`}
+            src={property.image?.startsWith('http') ? property.image : `${process.env.NEXT_PUBLIC_BASE_PATH || ''}${property.image}`}
             alt={property.name}
             className="w-full h-full object-cover object-center"
           />

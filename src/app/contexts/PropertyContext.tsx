@@ -51,10 +51,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      // Combine with mock properties (deduplicating by ID) to ensure the UI is never empty!
-      const dbIds = new Set(parsedData.map(d => d.id));
-      const missingMocks = mockProperties.filter(m => !dbIds.has(m.id));
-      setProperties([...missingMocks, ...parsedData] as Property[]);
+      setProperties(parsedData as Property[]);
     }
     setLoading(false);
   };

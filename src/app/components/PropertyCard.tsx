@@ -28,7 +28,7 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
       >
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           <img
-            src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}${property.image}`}
+            src={property.image?.startsWith('http') ? property.image : `${process.env.NEXT_PUBLIC_BASE_PATH || ''}${property.image}`}
             alt={property.name}
             className="w-full h-full object-cover object-center lg:group-hover:scale-110 transition-transform duration-300"
           />
