@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../utils/supabase';
-import { Property } from '../data/mockData';
+import { Property, mockProperties } from '../data/mockData';
 
 interface PropertyContextType {
   properties: Property[];
