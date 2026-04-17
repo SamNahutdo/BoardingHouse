@@ -94,7 +94,10 @@ export function MessagesPage() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const newMsg = payload.new as any;
         if (newMsg.senderId === user.id || newMsg.receiverId === user.id) {
-          setAllMessages(prev => [...prev, { ...newMsg, timestamp: new Date(newMsg.timestamp) }]);
+          setAllMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [...prev, { ...newMsg, timestamp: new Date(newMsg.timestamp) }];
+          });
         }
       })
       .subscribe();
@@ -216,6 +219,7 @@ export function MessagesPage() {
     const otherUserName = selectedConversation.participantNames.find(n => n !== user.name)!;
 
     const message = {
+      id: crypto.randomUUID(), // Local ID for deduplication
       senderId: user.id,
       senderName: user.name,
       receiverId: otherUserId,
@@ -226,6 +230,10 @@ export function MessagesPage() {
     };
 
     setNewMessage('');
+    // Optimistic update for instant feedback
+    setAllMessages(prev => [...prev, { ...message, timestamp: new Date(message.timestamp) }]);
+    
+    // Background insert
     await supabase.from('messages').insert([message]);
   };
 
