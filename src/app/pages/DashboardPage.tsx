@@ -39,6 +39,48 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { supabase } from '../utils/supabase';
+
+const getIcon = () => {
+  if (typeof window === 'undefined') return undefined; // Avoid SSR crashes!
+  return L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+};
+
+function LocationMarker({ position, setPosition }: { position: L.LatLng | null, setPosition: (p: L.LatLng) => void }) {
+  const map = useMapEvents({
+    click(e) {
+      setPosition(e.latlng);
+    },
+    locationfound(e) {
+      if (!position) { // Only set if they haven't explicitly set one already
+        setPosition(e.latlng);
+        map.flyTo(e.latlng, map.getZoom());
+      }
+    },
+  });
+
+  useEffect(() => {
+    map.locate();
+    const t = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    return () => clearTimeout(t);
+  }, [map]);
+
+  return position === null ? null : (
+    <Marker position={position} icon={getIcon()}></Marker>
+  );
+}
 
 export function DashboardPage() {
   const { user } = useUser();
@@ -70,6 +112,9 @@ export function DashboardPage() {
     capacity: '',
     image: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string>('');
+  const [mapPosition, setMapPosition] = useState<L.LatLng | null>(null);
 
   // Mock earnings data
   const earningsData = [
@@ -133,6 +178,13 @@ export function DashboardPage() {
       image: property.image || '/pics/default.png',
     });
     setAmenities(Array.isArray(property.amenities) ? property.amenities : []);
+    setImageFile(null);
+    setPreviewImage(property.image || '/pics/default.png');
+    if (property.coordinates && property.coordinates.length >= 2) {
+      setMapPosition(new L.LatLng(property.coordinates[0], property.coordinates[1]));
+    } else {
+      setMapPosition(null);
+    }
     setActiveTab('add');
   };
 
@@ -140,6 +192,32 @@ export function DashboardPage() {
     e.preventDefault();
     
     // Construct property payload
+    let finalImageUrl = formData.image || '/pics/default.png';
+    const toastId = toast.loading('Publishing...');
+
+    try {
+      if (imageFile) {
+        // Upload to Supabase Storage
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `images/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, imageFile);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(filePath);
+
+        finalImageUrl = publicUrlData.publicUrl;
+      }
+
+
     const payload: Partial<Property> = {
       name: formData.name,
       location: formData.location,
@@ -153,20 +231,20 @@ export function DashboardPage() {
       roomsAvailable: 1, 
       totalRooms: 1,
       roomCapacity: Number(formData.capacity),
-      coordinates: [0, 0], // Optional map feature default
+      coordinates: mapPosition ? [mapPosition.lat, mapPosition.lng] : [9.6469, 123.8541], // Default to Bohol if none picked
       address: formData.location,
       municipality: formData.location.split(',')[0],
       amenities: amenities,
-      image: formData.image || '/pics/default.png',
+      image: finalImageUrl,
       ownerId: user?.id || 'owner1',
     };
 
     if (editingPropertyId) {
       await updateProperty(editingPropertyId, payload);
-      toast.success('Property updated successfully!');
+      toast.success('Property updated successfully!', { id: toastId });
     } else {
       await addProperty(payload as Omit<Property, 'id'>);
-      toast.success('New boarding house published!');
+      toast.success('New boarding house published!', { id: toastId });
     }
     
     // Reset form
@@ -182,7 +260,14 @@ export function DashboardPage() {
       image: '',
     });
     setAmenities([]);
+    setImageFile(null);
+    setPreviewImage('');
+    setMapPosition(null);
     setActiveTab('properties');
+  } catch (err: any) {
+    console.error('Error publishing property:', err);
+    toast.error(err?.message || 'Failed to publish property', { id: toastId });
+  }
   };
 
   // Handlers for Properties
@@ -245,6 +330,9 @@ export function DashboardPage() {
             });
             setAmenities([]);
             setEditingPropertyId(null);
+            setImageFile(null);
+            setPreviewImage('');
+            setMapPosition(null);
           }
         }} className="space-y-8">
           <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full h-auto gap-2 p-1 bg-muted/50 rounded-xl">
@@ -490,8 +578,49 @@ export function DashboardPage() {
                 </div>
 
                 <div>
-                  <Label>Image URL (Leave blank for default)</Label>
-                  <Input id="image" name="image" value={formData.image} onChange={handleInputChange} placeholder="https://example.com/image.png" className="mt-2" />
+                  <Label>Boarding House Location on Map (Click to Pin) *</Label>
+                  <div className="h-[300px] w-full rounded-2xl overflow-hidden border mt-2">
+                    <MapContainer
+                      center={[9.8500, 124.1435]} // Bohol Center
+                      zoom={10}
+                      minZoom={9}
+                      maxBounds={[[9.5, 123.5], [10.5, 124.8]]}
+                      maxBoundsViscosity={1.0}
+                      style={{ height: '100%', width: '100%' }}
+                    >
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <LocationMarker position={mapPosition} setPosition={setMapPosition} />
+                    </MapContainer>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 text-right">Zoom in and click to drop a pin.</p>
+                </div>
+
+                <div>
+                  <Label>Property Image (Optional)</Label>
+                  <div className="mt-2 flex gap-4 items-center">
+                    {(previewImage || formData.image) && (
+                      <img src={previewImage || formData.image || ''} alt="preview" className="h-20 w-20 object-cover rounded-lg border" />
+                    )}
+                    <div className="flex-1">
+                      <Input 
+                        id="image" 
+                        name="image" 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setImageFile(file);
+                            const objectUrl = URL.createObjectURL(file);
+                            setPreviewImage(objectUrl);
+                            setFormData({...formData, image: file.name});
+                          }
+                        }}
+                        className="cursor-pointer"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Choose a clear photo from your files.</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
