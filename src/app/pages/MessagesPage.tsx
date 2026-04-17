@@ -89,18 +89,33 @@ export function MessagesPage() {
     fetchMessages();
 
     // Supabase Realtime Subscription!
+    const channelId = `messages_channel_${user.id}`;
     const subscription = supabase
-      .channel('messages_channel')
+      .channel(channelId)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const newMsg = payload.new as any;
-        if (newMsg.senderId === user.id || newMsg.receiverId === user.id) {
+        const sId = newMsg.senderId || newMsg.senderid;
+        const rId = newMsg.receiverId || newMsg.receiverid;
+        
+        if (sId === user.id || rId === user.id) {
           setAllMessages(prev => {
             if (prev.some(m => m.id === newMsg.id)) return prev;
-            return [...prev, { ...newMsg, timestamp: new Date(newMsg.timestamp) }];
+            return [...prev, {
+              id: newMsg.id,
+              senderId: sId,
+              senderName: newMsg.senderName || newMsg.sendername,
+              receiverId: rId,
+              receiverName: newMsg.receiverName || newMsg.receivername,
+              content: newMsg.content,
+              timestamp: new Date(newMsg.timestamp),
+              read: newMsg.read || false
+            }];
           });
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime status:', status);
+      });
 
     return () => {
       supabase.removeChannel(subscription);
