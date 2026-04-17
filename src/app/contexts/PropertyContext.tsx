@@ -25,21 +25,24 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
       setProperties(mockProperties);
     } else if (data) {
       const parsedData = data.map(item => {
-        let parsedAmenities = item.amenities;
+        let parsedAmenities: string[] = [];
         if (typeof item.amenities === 'string') {
           try {
-            parsedAmenities = JSON.parse(item.amenities);
-          } catch(e) {
-            parsedAmenities = [];
-          }
+            const parsed = JSON.parse(item.amenities);
+            if (Array.isArray(parsed)) parsedAmenities = parsed;
+          } catch(e) {}
+        } else if (Array.isArray(item.amenities)) {
+          parsedAmenities = item.amenities;
         }
-        let parsedCoordinates = item.coordinates;
+
+        let parsedCoordinates: [number, number] = [0, 0];
         if (typeof item.coordinates === 'string') {
           try {
-            parsedCoordinates = JSON.parse(item.coordinates);
-          } catch(e) {
-            parsedCoordinates = [0,0];
-          }
+            const parsed = JSON.parse(item.coordinates);
+            if (Array.isArray(parsed) && parsed.length >= 2) parsedCoordinates = parsed as [number, number];
+          } catch(e) {}
+        } else if (Array.isArray(item.coordinates) && item.coordinates.length >= 2) {
+          parsedCoordinates = item.coordinates as [number, number];
         }
         return {
           ...item,
