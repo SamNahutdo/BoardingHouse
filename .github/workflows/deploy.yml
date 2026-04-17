@@ -47,6 +47,8 @@ jobs:
         env:
           NEXT_PUBLIC_BASE_PATH: /BoardingHouse
           NEXT_PUBLIC_STATIC_EXPORT: "1"
+          NEXT_PUBLIC_SUPABASE_URL: https://ahjjfpqxhnhobzdxunyn.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9DcjUuYHuKWOkRVI1x5jIg_FGSk9wK5
         run: pnpm build
 
       - name: Prepare artifact
