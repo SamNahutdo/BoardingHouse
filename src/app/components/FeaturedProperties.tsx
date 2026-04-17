@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { PropertyCard } from './PropertyCard';
 import { PropertyCardSkeleton } from './PropertyCardSkeleton';
-import { mockProperties } from '../data/mockData';
+import { useProperties } from '../contexts/PropertyContext';
 import { Button } from './ui/button';
 
 interface FeaturedPropertiesProps {
@@ -18,8 +18,13 @@ export function FeaturedProperties({
   showViewAll = true,
 }: FeaturedPropertiesProps) {
   const navigate = useNavigate();
+  const { properties: allProperties } = useProperties();
   const [loading, setLoading] = useState(true);
-  const [properties, setProperties] = useState(mockProperties);
+  const [properties, setProperties] = useState(allProperties);
+
+  useEffect(() => {
+    setProperties(allProperties);
+  }, [allProperties]);
 
   useEffect(() => {
     // Simulate loading

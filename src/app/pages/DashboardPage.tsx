@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { DollarSign, Building2, Calendar, Star, TrendingUp, Users, Plus, Edit, Trash2, User, Mail, Receipt, CreditCard, FileText, Upload, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StatsCard } from '../components/StatsCard';
-import { ownerStats, mockBookings, mockProperties, Booking } from '../data/mockData';
+import { ownerStats, mockBookings, Booking } from '../data/mockData';
+import { Property } from '../data/mockData';
 import { Card } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
@@ -14,6 +15,7 @@ import { PropertyCardSkeleton } from '../components/PropertyCardSkeleton';
 import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { useUser } from '../contexts/UserContext';
+import { useProperties } from '../contexts/PropertyContext';
 import { ensureSeedBookings, getStoredBookings } from '../data/bookingStorage';
 import { toast } from 'sonner';
 import {
@@ -40,19 +42,22 @@ import {
 
 export function DashboardPage() {
   const { user } = useUser();
+  const { properties, loading: loadingProperties, addProperty, updateProperty, deleteProperty } = useProperties();
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Filter properties by owner
+  const ownerProperties = properties.filter((p) => p.ownerId === user?.id || p.ownerId === 'owner1');
+
   // Properties State
-  const [loadingProperties, setLoadingProperties] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
-  const ownerProperties = mockProperties.filter((p) => p.ownerId === 'owner1');
 
   // Bookings State
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
 
-  // Add Property State
+  // Add/Edit Property State
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [amenities, setAmenities] = useState<string[]>([]);
   const [newAmenity, setNewAmenity] = useState('');
   const [formData, setFormData] = useState({
@@ -63,6 +68,7 @@ export function DashboardPage() {
     bedrooms: '',
     bathrooms: '',
     capacity: '',
+    image: '',
   });
 
   // Mock earnings data
@@ -80,8 +86,6 @@ export function DashboardPage() {
   ];
 
   useEffect(() => {
-    // Initial Load Timers
-    const timerProps = setTimeout(() => setLoadingProperties(false), 800);
     ensureSeedBookings();
     const timerBookings = setTimeout(() => {
       const allBookings = getStoredBookings();
@@ -93,12 +97,11 @@ export function DashboardPage() {
     }, 500);
 
     return () => {
-      clearTimeout(timerProps);
       clearTimeout(timerBookings);
     };
-  }, []);
+  }, [ownerProperties.length]);
 
-  // Handlers for Add Property
+  // Handlers for Add/Edit Property
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -117,10 +120,69 @@ export function DashboardPage() {
     setAmenities(amenities.filter((a) => a !== amenity));
   };
 
-  const handleSubmitProperty = (e: React.FormEvent) => {
+  const handleEditProperty = (property: Property) => {
+    setEditingPropertyId(property.id);
+    setFormData({
+      name: property.name,
+      location: property.location,
+      price: property.price.toString(),
+      description: property.description || '',
+      bedrooms: property.bedrooms?.toString() || '1',
+      bathrooms: property.bathrooms?.toString() || '1',
+      capacity: property.capacity?.toString() || '1',
+      image: property.image || '/pics/default.png',
+    });
+    setAmenities(Array.isArray(property.amenities) ? property.amenities : []);
+    setActiveTab('add');
+  };
+
+  const handleSubmitProperty = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Property added successfully!');
-    setActiveTab('properties'); // Go back to properties tab
+    
+    // Construct property payload
+    const payload: Partial<Property> = {
+      name: formData.name,
+      location: formData.location,
+      price: Number(formData.price),
+      description: formData.description,
+      bedrooms: Number(formData.bedrooms),
+      bathrooms: Number(formData.bathrooms),
+      capacity: Number(formData.capacity),
+      rating: 0, // default
+      verified: false,
+      roomsAvailable: 1, 
+      totalRooms: 1,
+      roomCapacity: Number(formData.capacity),
+      coordinates: [0, 0], // Optional map feature default
+      address: formData.location,
+      municipality: formData.location.split(',')[0],
+      amenities: amenities,
+      image: formData.image || '/pics/default.png',
+      ownerId: user?.id || 'owner1',
+    };
+
+    if (editingPropertyId) {
+      await updateProperty(editingPropertyId, payload);
+      toast.success('Property updated successfully!');
+    } else {
+      await addProperty(payload as Omit<Property, 'id'>);
+      toast.success('New boarding house published!');
+    }
+    
+    // Reset form
+    setEditingPropertyId(null);
+    setFormData({
+      name: '',
+      location: '',
+      price: '',
+      description: '',
+      bedrooms: '',
+      bathrooms: '',
+      capacity: '',
+      image: '',
+    });
+    setAmenities([]);
+    setActiveTab('properties');
   };
 
   // Handlers for Properties
@@ -129,9 +191,14 @@ export function DashboardPage() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (propertyToDelete) {
-      toast.success('Property deleted successfully!');
+      const success = await deleteProperty(propertyToDelete);
+      if (success) {
+        toast.success('Property deleted successfully!');
+      } else {
+        toast.error('Failed to delete property.');
+      }
       setDeleteDialogOpen(false);
       setPropertyToDelete(null);
     }
@@ -170,7 +237,16 @@ export function DashboardPage() {
           Owner Dashboard
         </motion.h1>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+        <Tabs value={activeTab} onValueChange={(val) => {
+          setActiveTab(val);
+          if (val === 'add' && !editingPropertyId) {
+            setFormData({
+              name: '', location: '', price: '', description: '', bedrooms: '', bathrooms: '', capacity: '', image: '',
+            });
+            setAmenities([]);
+            setEditingPropertyId(null);
+          }
+        }} className="space-y-8">
           <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full h-auto gap-2 p-1 bg-muted/50 rounded-xl">
             <TabsTrigger value="overview" className="rounded-lg py-3">
               <TrendingUp className="w-4 h-4 mr-2 hidden md:block" /> Overview
@@ -181,11 +257,10 @@ export function DashboardPage() {
             <TabsTrigger value="bookings" className="rounded-lg py-3">
               <Calendar className="w-4 h-4 mr-2 hidden md:block" /> Bookings & Guests
             </TabsTrigger>
-            {ownerProperties.length === 0 && (
-              <TabsTrigger value="add" className="rounded-lg py-3">
-                <Plus className="w-4 h-4 mr-2 hidden md:block" /> Add Property
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="add" className="rounded-lg py-3">
+              {editingPropertyId ? <Edit className="w-4 h-4 mr-2 hidden md:block" /> : <Plus className="w-4 h-4 mr-2 hidden md:block" />}
+              {editingPropertyId ? 'Edit Property' : 'Add Property'}
+            </TabsTrigger>
           </TabsList>
 
           {/* TAB 1: OVERVIEW */}
@@ -201,14 +276,14 @@ export function DashboardPage() {
               />
               <StatsCard
                 title="Active Properties"
-                value={ownerStats.activeProperties}
+                value={ownerProperties.length}
                 icon={Building2}
                 color="blue"
                 delay={0.1}
               />
               <StatsCard
                 title="Active Bookings"
-                value={ownerStats.activeBookings}
+                value={bookings.filter(b => b.status === 'confirmed').length}
                 icon={Calendar}
                 color="purple"
                 delay={0.2}
@@ -279,7 +354,7 @@ export function DashboardPage() {
                     <PropertyCard property={property} onClick={() => {}} />
                     
                     <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-background/90 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); setActiveTab('add') }}>
+                      <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-background/90 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); handleEditProperty(property); }}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="destructive" className="h-8 w-8 p-0 bg-background/90 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); handleDeleteProperty(property.id); }}>
@@ -362,7 +437,7 @@ export function DashboardPage() {
             </div>
           </TabsContent>
 
-          {/* TAB 4: ADD PROPERTY */}
+          {/* TAB 4: ADD/EDIT PROPERTY */}
           <TabsContent value="add" className="space-y-6">
             <Card className="p-6 sm:p-8 rounded-2xl">
               <form onSubmit={handleSubmitProperty} className="space-y-6">
@@ -383,6 +458,14 @@ export function DashboardPage() {
                     <Label htmlFor="capacity">Capacity per Room *</Label>
                     <Input id="capacity" name="capacity" type="number" value={formData.capacity} onChange={handleInputChange} placeholder="e.g., 4" required className="mt-2" />
                   </div>
+                  <div>
+                    <Label htmlFor="bedrooms">Bedrooms</Label>
+                    <Input id="bedrooms" name="bedrooms" type="number" value={formData.bedrooms} onChange={handleInputChange} placeholder="e.g., 1" className="mt-2" />
+                  </div>
+                  <div>
+                    <Label htmlFor="bathrooms">Bathrooms</Label>
+                    <Input id="bathrooms" name="bathrooms" type="number" value={formData.bathrooms} onChange={handleInputChange} placeholder="e.g., 1" className="mt-2" />
+                  </div>
                 </div>
 
                 <div>
@@ -393,7 +476,7 @@ export function DashboardPage() {
                 <div>
                   <Label>Free Amenities</Label>
                   <div className="flex gap-2 mt-2">
-                    <Input value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)} placeholder="e.g., Free WiFi, Electricity Included" onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAmenity())} />
+                    <Input value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)} placeholder="e.g., Free WiFi, Electricity Included" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAmenity())} />
                     <Button type="button" variant="outline" onClick={handleAddAmenity}><Plus className="h-4 w-4" /></Button>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-3">
@@ -407,17 +490,15 @@ export function DashboardPage() {
                 </div>
 
                 <div>
-                  <Label>Cover Image</Label>
-                  <div className="mt-2 border-2 border-dashed rounded-xl p-8 text-center hover:border-green-600 transition-colors cursor-pointer">
-                    <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground mb-1">Click to upload or drag and drop</p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
-                  </div>
+                  <Label>Image URL (Leave blank for default)</Label>
+                  <Input id="image" name="image" value={formData.image} onChange={handleInputChange} placeholder="https://example.com/image.png" className="mt-2" />
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl">Publish Boarding House</Button>
-                  <Button type="button" variant="outline" onClick={() => setActiveTab('properties')} className="rounded-xl">Cancel</Button>
+                  <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl">
+                    {editingPropertyId ? 'Save Changes' : 'Publish Boarding House'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => { setActiveTab('properties'); setEditingPropertyId(null); }} className="rounded-xl">Cancel</Button>
                 </div>
               </form>
             </Card>
@@ -430,7 +511,7 @@ export function DashboardPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Property</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this property? This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>Are you sure you want to delete this property? This action cannot be undone and will immediately remove it from public search.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

@@ -4,7 +4,8 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PropertyCard } from '../components/PropertyCard';
 import { PropertyCardSkeleton } from '../components/PropertyCardSkeleton';
-import { mockProperties, Property } from '../data/mockData';
+import { Property } from '../data/mockData';
+import { useProperties } from '../contexts/PropertyContext';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Slider } from '../components/ui/slider';
@@ -36,7 +37,7 @@ export function SearchPage() {
   }, [searchQuery, priceRange, minRating]);
 
   const filterProperties = () => {
-    let filtered = mockProperties;
+    let filtered = properties;
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     if (normalizedQuery) {

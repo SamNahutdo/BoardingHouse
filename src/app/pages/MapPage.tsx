@@ -1,6 +1,6 @@
 import { Card } from '../components/ui/card';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import L from 'leaflet';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -11,6 +11,7 @@ import {
   getPropertyAvailabilityLabel,
   isPropertyFullyBooked,
 } from '../data/mockData';
+import { useProperties } from '../contexts/PropertyContext';
 import { useOSRM } from '../hooks/useOSRM';
 
 const icon = L.icon({
@@ -55,16 +56,21 @@ function MapFocus({ position }: { position: [number, number] }) {
 }
 
 export function MapPage() {
+  const { properties } = useProperties();
   const [mapReady, setMapReady] = useState(false);
-  const [selectedHouseId, setSelectedHouseId] = useState<string>(mockProperties[0]?.id ?? '');
+  const [selectedHouseId, setSelectedHouseId] = useState<string>('');
   const [showNavigation, setShowNavigation] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | undefined>();
-  const selectedHouse =
-    mockProperties.find((property) => property.id === selectedHouseId) ?? mockProperties[0];
+  
+  const selectedHouse = useMemo(() => {
+    return (
+      properties.find((property) => property.id === selectedHouseId) ?? properties[0]
+    );
+  }, [selectedHouseId, properties]);
 
   const { route, isLoading, error } = useOSRM(
     showNavigation && userLocation ? userLocation : undefined,
-    showNavigation ? selectedHouse.coordinates : undefined
+    showNavigation && selectedHouse ? selectedHouse.coordinates : undefined
   );
 
   useEffect(() => {
@@ -97,7 +103,7 @@ export function MapPage() {
           return earthRadiusKm * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
         };
 
-        const nearest = [...mockProperties]
+        const nearest = [...properties]
           .map((property) => ({
             property,
             distance: getDistance(
@@ -139,7 +145,7 @@ export function MapPage() {
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   <MapInvalidator />
                   <MapFocus position={selectedHouse.coordinates} />
-                  {mockProperties.map((house) => (
+                  {properties.map((house) => (
                     <Marker
                       key={house.id}
                       position={house.coordinates}
@@ -285,7 +291,7 @@ export function MapPage() {
           <Card className="overflow-hidden rounded-2xl border-2 p-5">
             <div className="font-semibold mb-3">All boarding houses</div>
             <div className="space-y-2 max-h-[500px] overflow-auto pr-1">
-              {mockProperties.map((house) => (
+              {properties.map((house) => (
                 <button
                   key={house.id}
                   type="button"

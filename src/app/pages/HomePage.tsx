@@ -3,14 +3,19 @@ import { FeaturedProperties } from '../components/FeaturedProperties';
 import { StatsCard } from '../components/StatsCard';
 import { DollarSign, Building2, Calendar, Star } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
-import { ownerStats, mockProperties } from '../data/mockData';
+import { ownerStats } from '../data/mockData';
+import { useProperties } from '../contexts/PropertyContext';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router';
 
 export function HomePage() {
-  const { mode } = useUser();
+  const { user } = useUser();
+  const { properties } = useProperties();
+  const navigate = useNavigate();
 
-  if (mode === 'owner') {
-    const ownerProperties = mockProperties.filter((p) => p.ownerId === 'owner1');
+  // Redirect owner immediately to dashboard
+  if (user?.accountType === 'owner') {
+    const ownerProperties = properties.filter((p) => p.ownerId === user.id || p.ownerId === 'owner1');
 
     return (
       <div className="min-h-screen bg-background">

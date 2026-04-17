@@ -19,11 +19,11 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
-  mockProperties,
   isPropertyFullyBooked,
   getPropertyAvailabilityLabel,
   Booking,
 } from '../data/mockData';
+import { useProperties } from '../contexts/PropertyContext';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -43,11 +43,12 @@ import {
 export function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { properties } = useProperties();
   const { isAuthenticated, user } = useUser();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
-  const property = mockProperties.find((p) => p.id === id);
+  const property = properties.find((p) => p.id === id);
 
   useEffect(() => {
     ensureSeedBookings();
