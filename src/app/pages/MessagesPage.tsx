@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { useSearchParams } from 'react-router';
 import { format } from 'date-fns';
+import { supabase } from '../utils/supabase';
 
 interface Message {
   id: string;
@@ -29,99 +30,9 @@ interface Conversation {
   unreadCount: number;
 }
 
-// Mock messages data
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    senderId: 'guest1',
-    senderName: 'Juan Dela Cruz',
-    receiverId: 'owner1',
-    receiverName: 'Maria Santos',
-    content: 'Hi, I\'m interested in booking your boarding house for next week.',
-    timestamp: new Date('2024-01-15T10:00:00'),
-    read: false,
-  },
-  {
-    id: '2',
-    senderId: 'owner1',
-    senderName: 'Maria Santos',
-    receiverId: 'guest1',
-    receiverName: 'Juan Dela Cruz',
-    content: 'Hello! Thank you for your interest. We have availability. What dates are you looking for?',
-    timestamp: new Date('2024-01-15T10:30:00'),
-    read: false,
-  },
-  {
-    id: '3',
-    senderId: 'guest2',
-    senderName: 'Ana Garcia',
-    receiverId: 'owner1',
-    receiverName: 'Maria Santos',
-    content: 'Can I bring my pet?',
-    timestamp: new Date(new Date().getTime() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-  },
-  {
-    id: '4',
-    senderId: 'owner1',
-    senderName: 'Maria Santos',
-    receiverId: 'guest2',
-    receiverName: 'Ana Garcia',
-    content: 'Yes, we are pet-friendly! There is just a small deposit required.',
-    timestamp: new Date(new Date().getTime() - 1000 * 60 * 60 * 2), // 2 hours ago
-    read: true,
-  },
-  {
-    id: '5',
-    senderId: 'guest3',
-    senderName: 'Cris Milla',
-    receiverId: 'owner1',
-    receiverName: 'Maria Santos',
-    content: 'Good morning! Is the 4-bed dorm still available for next semester?',
-    timestamp: new Date(new Date().getTime() - 1000 * 60 * 15), // 15 mins ago
-    read: false,
-  },
-  {
-    id: '6',
-    senderId: 'guest4',
-    senderName: 'Warren Comiling',
-    receiverId: 'owner1',
-    receiverName: 'Maria Santos',
-    content: 'Do you have curfew times implemented?',
-    timestamp: new Date(new Date().getTime() - 1000 * 60 * 45), // 45 mins ago
-    read: true,
-  },
-  {
-    id: '7',
-    senderId: 'guest5',
-    senderName: 'Jaylord Abansado',
-    receiverId: 'owner1',
-    receiverName: 'Maria Santos',
-    content: 'I already paid the reservation fee online. Here is my receipt.',
-    timestamp: new Date(new Date().getTime() - 1000 * 60 * 60 * 5), // 5 hours ago
-    read: false,
-  },
-  {
-    id: '8',
-    senderId: 'owner1',
-    senderName: 'Maria Santos',
-    receiverId: 'guest6',
-    receiverName: 'JB Ladaran',
-    content: 'Hi JB, just reminding you about your upcoming check-in tomorrow.',
-    timestamp: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    read: true,
-  },
-  {
-    id: '9',
-    senderId: 'guest7',
-    senderName: 'Shiela Comaps',
-    receiverId: 'owner1',
-    receiverName: 'Maria Santos',
-    content: 'Is internet included in the monthly rent? Thanks!!',
-    timestamp: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-    read: true,
-  },
-];
+// Mock removed, using Supabase Realtime now
+
+import { UserSearchDialog } from '../components/UserSearchDialog';
 
 export function MessagesPage() {
   const { user, mode } = useUser();
@@ -134,6 +45,10 @@ export function MessagesPage() {
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [globalSearchResults, setGlobalSearchResults] = useState<any[]>([]);
+  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -148,34 +63,85 @@ export function MessagesPage() {
   useEffect(() => {
     const vcParam = searchParams.get('vc');
     if (vcParam === 'true' && conversations.length > 0) {
-      // Auto-select first conversation and start VC
       setSelectedConversation(conversations[0]);
       setIsVideoCallActive(true);
-      // Remove the vc parameter from URL
       setSearchParams({});
     }
   }, [searchParams, conversations, setSearchParams]);
 
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
+
   useEffect(() => {
     if (!user) return;
 
-    // Group messages into conversations
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`senderId.eq.${user.id},receiverId.eq.${user.id}`)
+        .order('timestamp', { ascending: true });
+
+      if (data) {
+        setAllMessages(data.map(d => ({ ...d, timestamp: new Date(d.timestamp) })));
+      }
+    };
+
+    fetchMessages();
+
+    // Supabase Realtime Subscription!
+    const subscription = supabase
+      .channel('messages_channel')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        const newMsg = payload.new as any;
+        if (newMsg.senderId === user.id || newMsg.receiverId === user.id) {
+          setAllMessages(prev => [...prev, { ...newMsg, timestamp: new Date(newMsg.timestamp) }]);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!searchQuery.trim() || !user) {
+      setGlobalSearchResults([]);
+      return;
+    }
+
+    const searchUsers = async () => {
+      setIsSearchingGlobal(true);
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('id, name, email')
+        .neq('id', user.id)
+        .or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .limit(5);
+
+      if (data) {
+        const existingParticipantIds = new Set(
+          conversations.flatMap(c => c.participants)
+        );
+        const newUsers = data.filter(u => !existingParticipantIds.has(u.id));
+        setGlobalSearchResults(newUsers);
+      }
+      setIsSearchingGlobal(false);
+    };
+
+    const debounce = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, user, conversations]);
+
+  useEffect(() => {
+    if (!user) return;
+
     const userConversations: { [key: string]: Conversation } = {};
 
-    // Map the mock 'owner1' to current user so mock data always shows up for the logged in user
-    const dynamicMessages = mockMessages.map(msg => ({
-      ...msg,
-      senderId: msg.senderId === 'owner1' ? user.id : msg.senderId,
-      senderName: msg.senderId === 'owner1' ? user.name : msg.senderName,
-      receiverId: msg.receiverId === 'owner1' ? user.id : msg.receiverId,
-      receiverName: msg.receiverId === 'owner1' ? user.name : msg.receiverName,
-    }));
-
-    dynamicMessages.forEach((message) => {
+    allMessages.forEach((message) => {
       if (message.senderId === user.id || message.receiverId === user.id) {
         const otherUserId = message.senderId === user.id ? message.receiverId : message.senderId;
         const otherUserName = message.senderId === user.id ? message.receiverName : message.senderName;
-
         const conversationId = [user.id, otherUserId].sort().join('-');
 
         if (!userConversations[conversationId]) {
@@ -198,46 +164,69 @@ export function MessagesPage() {
     });
 
     setConversations(Object.values(userConversations).sort((a, b) => b.lastMessage.timestamp.getTime() - a.lastMessage.timestamp.getTime()));
-  }, [user]);
+  }, [allMessages, user]);
+
+  useEffect(() => {
+    if (!selectedConversation || !user) return;
+    const conversationMessages = allMessages.filter(
+      (msg) =>
+        (msg.senderId === user.id && msg.receiverId === selectedConversation.participants.find(p => p !== user.id)) ||
+        (msg.receiverId === user.id && msg.senderId === selectedConversation.participants.find(p => p !== user.id))
+    );
+    setMessages(conversationMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()));
+  }, [selectedConversation, allMessages, user]);
 
   const handleSelectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
-    // Ensure we filter from the dynamically mapped messages so they show up
-    const dynamicMessages = mockMessages.map(msg => ({
-      ...msg,
-      senderId: msg.senderId === 'owner1' ? user?.id || '' : msg.senderId,
-      senderName: msg.senderId === 'owner1' ? user?.name || '' : msg.senderName,
-      receiverId: msg.receiverId === 'owner1' ? user?.id || '' : msg.receiverId,
-      receiverName: msg.receiverId === 'owner1' ? user?.name || '' : msg.receiverName,
-    }));
-
-    const conversationMessages = dynamicMessages.filter(
-      (msg) =>
-        (msg.senderId === user?.id && msg.receiverId === conversation.participants.find(p => p !== user?.id)) ||
-        (msg.receiverId === user?.id && msg.senderId === conversation.participants.find(p => p !== user?.id))
-    );
-    setMessages(conversationMessages);
   };
 
-  const handleSendMessage = () => {
+  const handleStartNewChat = (selectedUser: { id: string; name: string }) => {
+    if (!user) return;
+    const conversationId = [user.id, selectedUser.id].sort().join('-');
+    const existing = conversations.find(c => c.id === conversationId);
+    
+    if (existing) {
+      setSelectedConversation(existing);
+    } else {
+      const newConv: Conversation = {
+        id: conversationId,
+        participants: [user.id, selectedUser.id],
+        participantNames: [user.name, selectedUser.name],
+        lastMessage: {
+          id: 'temp',
+          senderId: user.id,
+          senderName: user.name,
+          receiverId: selectedUser.id,
+          receiverName: selectedUser.name,
+          content: 'Started a new conversation',
+          timestamp: new Date(),
+          read: true
+        },
+        unreadCount: 0
+      };
+      setConversations([newConv, ...conversations]);
+      setSelectedConversation(newConv);
+    }
+  };
+
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
     const otherUserId = selectedConversation.participants.find(p => p !== user.id)!;
     const otherUserName = selectedConversation.participantNames.find(n => n !== user.name)!;
 
-    const message: Message = {
-      id: Date.now().toString(),
+    const message = {
       senderId: user.id,
       senderName: user.name,
       receiverId: otherUserId,
       receiverName: otherUserName,
       content: newMessage,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       read: false,
     };
 
-    setMessages(prev => [...prev, message]);
     setNewMessage('');
+    await supabase.from('messages').insert([message]);
   };
 
   const handleStartVideoCall = () => {
@@ -292,10 +281,39 @@ export function MessagesPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto w-full">
-          {filteredConversations.length === 0 ? (
+          {searchQuery && globalSearchResults.length > 0 && (
+            <div className="p-2 border-b border-border/50 bg-accent/10">
+              <h3 className="px-2 pt-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Users found</h3>
+              {globalSearchResults.map((u) => (
+                <div
+                  key={u.id}
+                  onClick={() => {
+                    handleStartNewChat(u);
+                    setSearchQuery('');
+                  }}
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent cursor-pointer transition-colors"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary/10 font-semibold">{u.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-sm font-medium truncate">{u.name}</p>
+                    <p className="text-xs text-green-600 truncate">{u.email}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {filteredConversations.length === 0 && !searchQuery ? (
             <div className="p-8 text-center text-muted-foreground">
               <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-20" />
               <p>No messages found</p>
+            </div>
+          ) : filteredConversations.length === 0 && searchQuery && globalSearchResults.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <SearchIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
+              <p>No users or chats found</p>
             </div>
           ) : (
             <div className="p-2 space-y-1">
@@ -486,7 +504,7 @@ export function MessagesPage() {
               <p className="text-muted-foreground text-lg mb-8">
                 Send private photos and messages to guests or owners.
               </p>
-              <Button className="rounded-full bg-green-600 hover:bg-green-700 text-white px-8 h-12" onClick={() => {}}>
+              <Button className="rounded-full bg-green-600 hover:bg-green-700 text-white px-8 h-12" onClick={() => setSearchDialogOpen(true)}>
                 Start a conversation
               </Button>
             </div>
@@ -585,6 +603,13 @@ export function MessagesPage() {
           </motion.div>
         </motion.div>
       )}
+
+      <UserSearchDialog 
+        open={searchDialogOpen} 
+        onOpenChange={setSearchDialogOpen} 
+        onSelectUser={handleStartNewChat} 
+        currentUserId={user.id} 
+      />
     </div>
   );
 }
