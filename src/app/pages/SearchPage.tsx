@@ -19,6 +19,7 @@ import {
 } from '../components/ui/sheet';
 
 export function SearchPage() {
+  const { properties } = useProperties();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
