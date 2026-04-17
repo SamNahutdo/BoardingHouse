@@ -77,6 +77,10 @@ export function MapPage() {
     setMapReady(true);
   }, []);
 
+  if (!selectedHouse) {
+    return <div className="min-h-screen flex items-center justify-center font-semibold text-muted-foreground text-lg">Loading board houses map...</div>;
+  }
+
   const findNearestHouse = () => {
     setShowNavigation(true); // Instant UI feedback!
     if (!navigator.geolocation) {
