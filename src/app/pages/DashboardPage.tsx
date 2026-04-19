@@ -16,8 +16,7 @@ import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { useUser } from '../contexts/UserContext';
 import { useProperties } from '../contexts/PropertyContext';
-import { mockBookings, Booking } from '../data/mockData';
-import { Property } from '../data/mockData';
+
 import { toast } from 'sonner';
 import {
   AlertDialog,
