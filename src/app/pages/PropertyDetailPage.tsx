@@ -33,6 +33,24 @@ import { PaymentDialog } from '../components/PaymentDialog';
 import { useUser } from '../contexts/UserContext';
 import { toast } from 'sonner';
 import { supabase } from '../utils/supabase';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import { Calendar } from '../components/ui/calendar';
+import { DateRange } from 'react-day-picker';
+import { addDays, differenceInCalendarDays, isSameDay } from 'date-fns';
+
+const getIcon = () => {
+  if (typeof window === 'undefined') return undefined;
+  return L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+};
 
 export function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +61,11 @@ export function PropertyDetailPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
   const property = properties.find((p) => p.id === id);
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 30),
+  });
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -59,6 +82,13 @@ export function PropertyDetailPage() {
       ),
     [activeBookings]
   );
+
+  const disabledDates = useMemo(() => {
+    return propertyBookings.map((b) => ({
+      from: new Date(b.checkIn),
+      to: new Date(b.checkOut),
+    }));
+  }, [propertyBookings]);
 
   if (!property) {
     return (
@@ -106,7 +136,12 @@ export function PropertyDetailPage() {
     }
 
     if (isFullyBooked) {
-      toast.error('This boarding house is already fully booked.');
+      toast.error('This boarding house is already fully booked right now.');
+      return;
+    }
+
+    if (!dateRange?.from || !dateRange?.to) {
+      toast.error('Please select both a check-in and check-out date from the calendar.');
       return;
     }
 
@@ -125,9 +160,14 @@ export function PropertyDetailPage() {
   };
 
   const handlePaymentSelect = async (paymentMethod: 'online' | 'pay-on-site') => {
-    const checkIn = new Date();
-    const checkOut = new Date();
-    checkOut.setMonth(checkOut.getMonth() + 1);
+    if (!dateRange?.from || !dateRange?.to) return;
+    
+    const checkInStr = dateRange.from.toISOString().slice(0, 10);
+    const checkOutStr = dateRange.to.toISOString().slice(0, 10);
+    
+    const days = differenceInCalendarDays(dateRange.to, dateRange.from);
+    const months = Math.max(1, Math.round(days / 30));
+    const calculatedPrice = property.price * months;
 
     const toastId = toast.loading('Securing reservation...');
 
@@ -138,10 +178,10 @@ export function PropertyDetailPage() {
       ownerId: property.ownerId || 'owner1',
       guestName: user!.name,
       guestEmail: user!.email,
-      checkIn: checkIn.toISOString().slice(0, 10),
-      checkOut: checkOut.toISOString().slice(0, 10),
+      checkIn: checkInStr,
+      checkOut: checkOutStr,
       status: 'pending',
-      totalPrice: property.price,
+      totalPrice: calculatedPrice,
       paymentMethod,
       receiptSent: paymentMethod === 'online',
       description: `Reservation request for ${property.name}. ${property.roomCapacity} people can stay in each room. ${paymentMethod === 'online' ? 'Receipt sent to ' + user!.email : 'Payment due on arrival'}.`,
@@ -330,16 +370,28 @@ export function PropertyDetailPage() {
                     <Mail className="h-4 w-4 mr-2" />
                     Ask about room rules
                   </Button>
-                  <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="w-full">
-                    <Button variant="outline" className="justify-start rounded-xl w-full">
-                      <Navigation className="h-4 w-4 mr-2" />
-                      Tap button to see location
-                    </Button>
-                  </a>
                 </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  Chat and VC are available as in-app mock features so owners and boarders can contact each other quickly.
-                </p>
+                
+                <h3 className="font-semibold text-xl mb-4 mt-8">Location Coordinates</h3>
+                <div className="h-[250px] w-full rounded-2xl overflow-hidden border">
+                    <MapContainer
+                      center={[property.coordinates[0], property.coordinates[1]]}
+                      zoom={15}
+                      minZoom={9}
+                      scrollWheelZoom={false}
+                      className="h-full w-full z-0 relative"
+                      style={{ height: '100%', width: '100%', isolation: 'isolate' }}
+                    >
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <Marker position={[property.coordinates[0], property.coordinates[1]]} icon={getIcon()} />
+                    </MapContainer>
+                </div>
+                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="w-full inline-block mt-3">
+                  <Button variant="outline" className="w-full rounded-xl">
+                    <Navigation className="h-4 w-4 mr-2" />
+                    Open in Google Maps
+                  </Button>
+                </a>
               </Card>
             </motion.div>
 
@@ -400,15 +452,32 @@ export function PropertyDetailPage() {
               <p className="text-xs text-center text-muted-foreground">
                 {!isAuthenticated
                   ? 'Login required to book'
-                  : userAlreadyBooked && !userBookedThisProperty
-                    ? 'You already have one active booking'
-                    : 'Choose payment method after booking'}
+                  : 'Choose payment method after booking'}
               </p>
 
-              <div className="mt-6 pt-6 border-t space-y-3">
+              <div className="mt-6 pt-6 border-t pb-6 border-b">
+                 <h4 className="font-semibold mb-3">Select Dates</h4>
+                 <div className="rounded-xl border overflow-hidden flex justify-center bg-card">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={1}
+                    disabled={[...disabledDates, { before: new Date() }]}
+                    className="p-3"
+                  />
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-3 text-center">
+                   Blocked out dates are already occupied by other boarders.
+                 </p>
+              </div>
+
+              <div className="mt-6 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Reservation amount</span>
-                  <span>₱{property.price.toLocaleString()}</span>
+                  <span className="text-muted-foreground">Calculated Reservation</span>
+                  <span>₱{((dateRange?.to && dateRange?.from) ? (Math.max(1, Math.round(differenceInCalendarDays(dateRange.to, dateRange.from) / 30)) * property.price) : property.price).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Payment options</span>
