@@ -17,7 +17,8 @@ interface UserContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   login: (email: string, password: string, accountType: UserMode) => Promise<{success: boolean, error?: string}>;
-  signup: (email: string, password: string, name: string, accountType: UserMode) => Promise<{success: boolean, error?: string}>;
+  signup: (email: string, password: string, name: string, accountType: UserMode) => Promise<{success: boolean, error?: string, requireOtp?: boolean}>;
+  verifyOtp: (email: string, otp: string, name: string, accountType: UserMode) => Promise<{success: boolean, error?: string}>;
   logout: () => void;
 }
 
@@ -73,95 +74,127 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string, name: string, accountType: UserMode): Promise<{success: boolean, error?: string}> => {
+  const signup = async (email: string, password: string, name: string, accountType: UserMode): Promise<{success: boolean, error?: string, requireOtp?: boolean}> => {
     try {
-      // Check if user already exists
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('email', email);
-        
-      if (checkError) {
-        return { success: false, error: 'Database error: ' + checkError.message };
-      }
-
-      if (existingUsers && existingUsers.length > 0) {
-        return { success: false, error: 'Email already exists. Please login instead.' };
-      }
-
-      const newId = `user-${Date.now()}`;
-
-      // Insert new user into custom table
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .insert([
-          {
-            id: newId,
-            email,
-            password,
-            name,
-            accountType
-          }
-        ])
-        .select();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, accountType }
+        }
+      });
 
       if (error) {
-        console.error('Signup insert error:', error);
-        return { success: false, error: 'Insert error: ' + error.message };
+        // If user already exists in custom table but not in auth, catch it
+        return { success: false, error: error.message };
       }
 
-      if (!data || data.length === 0) {
-        return { success: false, error: 'Failed to create user.' };
+      if (data.user && !data.session) {
+        return { success: true, requireOtp: true };
       }
 
-      // Auto login after successful signup
-      const newUser = data[0];
-      const { password: _, ...userWithoutPassword } = newUser;
-      
-      setUser(userWithoutPassword as AuthUser);
-      setModeState(accountType);
-      localStorage.setItem('bohol_board_user', JSON.stringify(userWithoutPassword));
-
-      return { success: true };
+      // If no OTP required (email format only, automatic confirm)
+      if (data.user) {
+        await upsertUserProfile(data.user.id, email, name, accountType, password);
+        const newUser: AuthUser = { id: data.user.id, email, name, accountType };
+        setUserStore(newUser);
+      }
+      return { success: true, requireOtp: false };
     } catch (e: any) {
-      console.error(e);
       return { success: false, error: 'Unexpected error: ' + e.message };
     }
+  };
+
+  const verifyOtp = async (email: string, token: string, name: string, accountType: UserMode): Promise<{success: boolean, error?: string}> => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'signup'
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user && data.session) {
+        await upsertUserProfile(data.user.id, email, name, accountType, 'migrated');
+        const newUser: AuthUser = { id: data.user.id, email, name, accountType };
+        setUserStore(newUser);
+        return { success: true };
+      }
+      return { success: false, error: 'Verification failed. Try again.' };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  };
+
+  const upsertUserProfile = async (id: string, email: string, name: string, accountType: UserMode, passwordStr: string) => {
+    const { data: existing } = await supabase.from('user_profiles').select('id').eq('id', id).single();
+    if (!existing) {
+      await supabase.from('user_profiles').insert([{
+        id, email, name, accountType, password: passwordStr
+      }]);
+    }
+  };
+
+  const setUserStore = (authUser: AuthUser) => {
+    setUser(authUser);
+    setModeState(authUser.accountType);
+    localStorage.setItem('bohol_board_user', JSON.stringify(authUser));
   };
 
   const login = async (email: string, password: string, accountType: UserMode): Promise<{success: boolean, error?: string}> => {
     try {
-      // Fetch user from custom table
-      const { data: users, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('email', email)
-        .eq('password', password)
-        .eq('accountType', accountType);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        return { success: false, error: 'Database error: ' + error.message };
+        // Fallback for legacy local users without auth account
+        const { data: legacyUsers, error: legacyError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('email', email)
+          .eq('password', password)
+          .eq('accountType', accountType);
+
+        if (legacyError || !legacyUsers || legacyUsers.length === 0) {
+          return { success: false, error: 'Invalid credentials or wrong account type.' };
+        }
+
+        const legacyUser = legacyUsers[0];
+        setUserStore({
+          id: legacyUser.id,
+          email: legacyUser.email,
+          name: legacyUser.name || 'User',
+          accountType: legacyUser.accountType
+        });
+        return { success: true };
       }
 
-      if (!users || users.length === 0) {
-        return { success: false, error: 'Invalid credentials or wrong account type.' };
+      // Found in supabase auth, fetch profile for metadata
+      if (data.user) {
+        const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', data.user.id).single();
+        if (profile && profile.accountType !== accountType) {
+          await supabase.auth.signOut();
+          return { success: false, error: 'Wrong account type.' };
+        }
+
+        setUserStore({
+          id: data.user.id,
+          email: data.user.email || email,
+          name: profile?.name || data.user.user_metadata?.name || 'User',
+          accountType: profile?.accountType || accountType
+        });
+        return { success: true };
       }
-
-      const foundUser = users[0];
-      const { password: _, ...userWithoutPassword } = foundUser;
-      
-      setUser(userWithoutPassword as AuthUser);
-      setModeState(accountType);
-      localStorage.setItem('bohol_board_user', JSON.stringify(userWithoutPassword));
-
-      return { success: true };
+      return { success: false, error: 'An unknown error occurred logging in.' };
     } catch (e: any) {
-      console.error(e);
       return { success: false, error: 'Unexpected error: ' + e.message };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setModeState('user');
     localStorage.removeItem('bohol_board_user');
@@ -176,6 +209,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       login,
       signup,
+      verifyOtp,
       logout
     }}>
       {children}

@@ -24,7 +24,7 @@ export function AuthDialog({
   requiredAccountType,
   onSuccess 
 }: AuthDialogProps) {
-  const { login, signup } = useUser();
+  const { login, signup, verifyOtp } = useUser();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [accountType, setAccountType] = useState<'user' | 'owner'>(requiredAccountType || 'user');
   
@@ -39,6 +39,11 @@ export function AuthDialog({
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
+
+  // OTP state
+  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [otpToken, setOtpToken] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +76,11 @@ export function AuthDialog({
       return;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail)) {
+      toast.error('Please enter a valid email address (e.g., name@example.com)');
+      return;
+    }
+
     if (signupPassword !== signupConfirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -87,17 +97,48 @@ export function AuthDialog({
       const result = await signup(signupEmail, signupPassword, signupName, accountType);
       
       if (result.success) {
-        toast.success(`Account created successfully! Welcome, ${signupName}`);
-        onOpenChange(false);
-        resetForms();
-        onSuccess?.();
+        if (result.requireOtp) {
+          toast.success(`Verification code sent! Check your email: ${signupEmail}`);
+          setIsOtpStep(true);
+        } else {
+          toast.success(`Account created successfully! Welcome, ${signupName}`);
+          onOpenChange(false);
+          resetForms();
+          onSuccess?.();
+        }
       } else {
-        toast.error(result.error || 'Email already exists. Please login instead.');
+        toast.error(result.error || 'Email already exists or invalid format.');
       }
     } catch (error) {
       toast.error('An error occurred during signup');
     } finally {
       setSignupLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpToken || otpToken.length < 6) {
+      toast.error('Please enter the full code sent to your email');
+      return;
+    }
+    
+    setOtpLoading(true);
+    try {
+      const result = await verifyOtp(signupEmail, otpToken, signupName, accountType);
+      if (result.success) {
+        toast.success(`Account verified! Welcome, ${signupName}`);
+        setIsOtpStep(false);
+        onOpenChange(false);
+        resetForms();
+        onSuccess?.();
+      } else {
+        toast.error(result.error || 'Invalid OTP code.');
+      }
+    } catch (error) {
+      toast.error('An error occurred during verification');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -108,6 +149,8 @@ export function AuthDialog({
     setSignupEmail('');
     setSignupPassword('');
     setSignupConfirmPassword('');
+    setIsOtpStep(false);
+    setOtpToken('');
   };
 
   return (
@@ -122,11 +165,57 @@ export function AuthDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
+        {isOtpStep ? (
+          <form onSubmit={handleVerifyOtp} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="otp-token">Enter Verification Code</Label>
+              <Input
+                id="otp-token"
+                type="text"
+                maxLength={8}
+                placeholder="123456"
+                value={otpToken}
+                onChange={(e) => setOtpToken(e.target.value)}
+                required
+                className="text-center text-lg tracking-widest"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                We sent a verification code to <strong>{signupEmail}</strong>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={otpLoading}
+              >
+                {otpLoading ? 'Verifying...' : 'Verify Email'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={handleSignup}
+                disabled={signupLoading}
+              >
+                {signupLoading ? 'Resending...' : 'Resend Code'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full"
+                onClick={() => setIsOtpStep(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
 
           {/* Account Type Selection */}
           {!requiredAccountType && (
@@ -257,6 +346,7 @@ export function AuthDialog({
             </form>
           </TabsContent>
         </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );
