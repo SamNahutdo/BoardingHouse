@@ -27,7 +27,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   ];
 
   const ownerMenuItems = [
-    { path: '/', label: 'Home', icon: Home },
     { path: '/messages', label: 'Messages', icon: MessageCircle },
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/profile', label: 'Profile', icon: User },
@@ -102,25 +101,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
               )}
 
-              {/* Mode Toggle */}
-              <div className="p-4 border-b">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    <span className="font-medium text-sm">
-                      {mode === 'user' ? 'Guest Mode' : 'Owner Mode'}
-                    </span>
-                  </div>
-                  <Switch 
-                    checked={mode === 'owner'} 
-                    onCheckedChange={(checked) => {
-                      toggleMode();
-                      navigate(checked ? '/dashboard' : '/');
-                      onClose();
-                    }} 
-                  />
-                </div>
-              </div>
+
 
               {/* Menu Items */}
               <nav className="flex-1 overflow-y-auto p-4">

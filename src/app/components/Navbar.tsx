@@ -35,7 +35,6 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   ];
 
   const ownerMenuItems = [
-    { path: '/', label: 'Home' },
     { path: '/messages', label: 'Messages' },
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/profile', label: 'Profile' },

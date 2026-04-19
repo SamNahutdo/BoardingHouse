@@ -16,6 +16,7 @@ import {
   DoorOpen,
   Navigation,
   Mail,
+  User,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
@@ -348,28 +349,20 @@ export function PropertyDetailPage() {
               transition={{ delay: 0.35 }}
             >
               <Card className="p-6 rounded-2xl">
-                <h3 className="font-semibold text-xl mb-4">Contact owner / boarders</h3>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline" 
-                    className="justify-start rounded-xl"
-                    onClick={() => navigate('/messages')}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Message owner
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="justify-start rounded-xl"
-                    onClick={() => navigate('/messages?vc=true')}
-                  >
-                    <Video className="h-4 w-4 mr-2" />
-                    Start VC
-                  </Button>
-                  <Button variant="outline" className="justify-start rounded-xl">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Ask about room rules
-                  </Button>
+                <h3 className="font-semibold text-xl mb-4">Boarding House Owner</h3>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 p-3 bg-accent/30 rounded-xl">
+                     <User className="h-5 w-5 text-muted-foreground" />
+                     <div className="flex flex-col">
+                       <span className="text-xs text-muted-foreground font-medium">Owned By</span>
+                       <span 
+                         onClick={() => navigate(`/profile/${property.ownerId}`)} 
+                         className="text-sm font-semibold hover:text-green-600 underline cursor-pointer"
+                       >
+                         View Owner Profile
+                       </span>
+                     </div>
+                  </div>
                 </div>
                 
                 <h3 className="font-semibold text-xl mb-4 mt-8">Location Coordinates</h3>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
 import { DollarSign, Building2, Calendar, Star, TrendingUp, Users, Plus, Edit, Trash2, User, Mail, Receipt, CreditCard, FileText, Upload, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StatsCard } from '../components/StatsCard';
@@ -28,6 +29,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog';
 import {
   LineChart,
   Line,
@@ -100,6 +108,16 @@ export function DashboardPage() {
 
   // Add/Edit Property State
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
+  
+  // Room Management State
+  const [roomManagementOpen, setRoomManagementOpen] = useState(false);
+  const [selectedPropertyForRooms, setSelectedPropertyForRooms] = useState<Property | null>(null);
+
+  const handleManageRooms = (property: Property) => {
+    setSelectedPropertyForRooms(property);
+    setRoomManagementOpen(true);
+  };
+  
   const [amenities, setAmenities] = useState<string[]>([]);
   const [newAmenity, setNewAmenity] = useState('');
   const [formData, setFormData] = useState({
@@ -200,6 +218,11 @@ export function DashboardPage() {
 
   const handleSubmitProperty = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.location.toLowerCase().includes('bohol')) {
+       toast.error('Invalid Location: You can only list boarding houses located within Bohol.');
+       return;
+    }
     
     // Construct property payload
     let finalImageUrl = formData.image || '/pics/default.png';
@@ -460,8 +483,8 @@ export function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {loadingProperties ? Array.from({ length: 3 }).map((_, i) => <PropertyCardSkeleton key={i} />) : 
                 ownerProperties.map((property, index) => (
-                  <motion.div key={property.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="relative group">
-                    <PropertyCard property={property} onClick={() => {}} />
+                  <motion.div key={property.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="relative group cursor-pointer">
+                    <PropertyCard property={property} onClick={() => handleManageRooms(property)} />
                     
                     <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-background/90 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); handleEditProperty(property); }}>
@@ -511,9 +534,9 @@ export function DashboardPage() {
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <User className="h-4 w-4" /> 
-                            <a href={`#/profile/${booking.guestId}`} className="text-sm font-medium hover:text-green-600 underline decoration-dotted underline-offset-4">
+                            <Link to={`/profile/${booking.guestId}`} className="text-sm font-medium hover:text-green-600 underline decoration-dotted underline-offset-4">
                               {booking.guestName}
-                            </a>
+                            </Link>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Mail className="h-4 w-4" /> <span className="text-sm">{booking.guestEmail}</span>
@@ -673,6 +696,39 @@ export function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    <Dialog open={roomManagementOpen} onOpenChange={setRoomManagementOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage Rooms - {selectedPropertyForRooms?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+             {!selectedPropertyForRooms?.rooms?.length ? (
+                <div className="text-center py-6 text-muted-foreground">
+                   <p>No rooms created yet. Click 'Add New Room' below.</p>
+                </div>
+             ) : (
+                selectedPropertyForRooms.rooms.map((room) => (
+                  <div key={room.id} className="p-3 border rounded-xl flex items-center justify-between">
+                     <div>
+                       <h4 className="font-semibold">{room.name}</h4>
+                       <p className="text-xs text-muted-foreground">Capacity: {room.capacity} boarders</p>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       {room.occupants >= room.capacity ? (
+                         <Badge variant="destructive">Full Room</Badge>
+                       ) : (
+                         <Badge className="bg-yellow-500 hover:bg-yellow-600">Needs {room.capacity - room.occupants} more</Badge>
+                       )}
+                     </div>
+                  </div>
+                ))
+             )}
+          </div>
+          <DialogFooter>
+             <Button variant="outline" className="w-full" onClick={() => toast.success("Feature in development!")}><Plus className="w-4 h-4 mr-2" /> Add New Room</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

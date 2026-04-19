@@ -164,38 +164,7 @@ export function ProfilePage() {
             </Card>
           </motion.div>
 
-          {isViewingSelf && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="p-6 rounded-2xl">
-                <h3 className="font-semibold text-lg mb-4">Account Settings</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-accent/50">
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <Label className="font-medium">Account Type</Label>
-                        <p className="text-sm text-muted-foreground">
-                          {mode === 'owner'
-                            ? 'You can manage properties and bookings'
-                            : 'You can search and book properties'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">
-                        {mode === 'user' ? 'Guest' : 'Owner'}
-                      </span>
-                      <Switch checked={mode === 'owner'} onCheckedChange={toggleMode} />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          )}
+
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

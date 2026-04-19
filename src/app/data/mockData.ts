@@ -23,6 +23,14 @@ export interface Property {
   nearSchool?: boolean;
   distanceToSchool?: string;
   curfew?: string;
+  rooms?: Room[];
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  capacity: number;
+  occupants: number;
 }
 
 export interface Booking {
@@ -43,7 +51,11 @@ export interface Booking {
 }
 
 export const mockProperties: Property[] = [
-  { id: 'rmh-boarding-house', name: 'RMH Boarding House', location: 'Tagbilaran City, Bohol', municipality: 'Tagbilaran', price: 8500, rating: 4.7, image: '/pics/rmh.png', ownerId: 'owner1', description: 'A clean and secure city boarding house near schools, transport terminals, and everyday essentials in central Tagbilaran.', amenities: ['WiFi', 'Shared Kitchen', 'Laundry Area', 'CCTV', 'Curfew Support'], bedrooms: 1, bathrooms: 1, capacity: 2, verified: true, roomsAvailable: 3, totalRooms: 12, roomCapacity: 2, coordinates: [9.6489, 123.8552], address: 'CPG East Avenue, Tagbilaran City, Bohol' },
+  { id: 'rmh-boarding-house', name: 'RMH Boarding House', location: 'Tagbilaran City, Bohol', municipality: 'Tagbilaran', price: 8500, rating: 4.7, image: '/pics/rmh.png', ownerId: 'owner1', description: 'A clean and secure city boarding house near schools, transport terminals, and everyday essentials in central Tagbilaran.', amenities: ['WiFi', 'Shared Kitchen', 'Laundry Area', 'CCTV', 'Curfew Support'], bedrooms: 1, bathrooms: 1, capacity: 2, verified: true, roomsAvailable: 3, totalRooms: 12, roomCapacity: 2, coordinates: [9.6489, 123.8552], address: 'CPG East Avenue, Tagbilaran City, Bohol', rooms: [
+    { id: 'r1', name: 'Room 101', capacity: 2, occupants: 2 },
+    { id: 'r2', name: 'Room 102', capacity: 2, occupants: 1 },
+    { id: 'r3', name: 'Room 103', capacity: 4, occupants: 0 },
+  ] },
   { id: 'genvern-pension-house', name: 'genvern & Pension house', location: 'Tagbilaran City, Bohol', municipality: 'Tagbilaran', price: 5200, rating: 4.5, image: '/pics/genvern.png', ownerId: 'owner1', description: 'Comfortable budget-friendly rooms with pension-house convenience for students, solo workers, and short-term boarders.', amenities: ['Air Conditioning', 'WiFi', 'Reception Desk', 'Private Bathroom', 'Parking'], bedrooms: 1, bathrooms: 1, capacity: 2, verified: true, roomsAvailable: 2, totalRooms: 10, roomCapacity: 2, coordinates: [9.6528, 123.8584], address: 'J.A. Clarin Street, Tagbilaran City, Bohol' },
   { id: 'halasan-boarding-house', name: 'Halasan Boarding house', location: 'Tagbilaran City, Bohol', municipality: 'Tagbilaran', price: 4200, rating: 4.3, image: '/pics/halasan.png', ownerId: 'owner1', description: 'Simple and peaceful boarding house ideal for long-stay renters looking for practical rooms close to downtown Tagbilaran.', amenities: ['Fan Room', 'Water Refill Access', 'Shared Kitchen', 'Study Area', 'Secure Gate'], bedrooms: 1, bathrooms: 1, capacity: 2, verified: false, roomsAvailable: 4, totalRooms: 9, roomCapacity: 2, coordinates: [9.6466, 123.8518], address: 'Rajah Sikatuna Avenue, Tagbilaran City, Bohol' },
   { id: 'lanao-love-guesthouse', name: 'Lanao love guesthouse', location: 'Tagbilaran City, Bohol', municipality: 'Tagbilaran', price: 5600, rating: 4.6, image: '/pics/Lanao_love_guesthouse.png', ownerId: 'owner1', description: 'Guesthouse-style boarding with neat rooms, welcoming staff, and easy access to markets and campus routes.', amenities: ['WiFi', 'Hot Shower', 'Shared Lounge', 'Laundry Service', 'CCTV'], bedrooms: 1, bathrooms: 1, capacity: 3, verified: true, roomsAvailable: 1, totalRooms: 8, roomCapacity: 3, coordinates: [9.6498, 123.8624], address: 'Lanao Street, Tagbilaran City, Bohol' },

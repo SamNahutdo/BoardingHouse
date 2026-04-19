@@ -134,16 +134,23 @@ export function SearchPage() {
                 <div className="py-6 space-y-6">
                   <div>
                     <label className="text-sm font-medium mb-3 block">
-                      Price Range: ₱{priceRange[0]} - ₱{priceRange[1]}
+                      Price Range
                     </label>
-                    <Slider
-                      min={0}
-                      max={8000}
-                      step={100}
-                      value={priceRange}
-                      onValueChange={setPriceRange}
-                      className="mb-2"
-                    />
+                    <div className="flex items-center gap-2 mb-2">
+                       <Input 
+                         type="number" 
+                         value={priceRange[0]} 
+                         onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+                         placeholder="Min"
+                       />
+                       <span>-</span>
+                       <Input 
+                         type="number" 
+                         value={priceRange[1]} 
+                         onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                         placeholder="Max"
+                       />
+                    </div>
                   </div>
 
                   <div>

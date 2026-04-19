@@ -59,15 +59,32 @@ export function MessagesPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Check if VC was requested from URL
+  // Check if VC or direct message was requested from URL
   useEffect(() => {
     const vcParam = searchParams.get('vc');
+    const userIdParam = searchParams.get('userId');
+    
     if (vcParam === 'true' && conversations.length > 0) {
       setSelectedConversation(conversations[0]);
       setIsVideoCallActive(true);
       setSearchParams({});
+    } else if (userIdParam && user) {
+      const existing = conversations.find(c => c.participants.includes(userIdParam));
+      if (existing) {
+        setSelectedConversation(existing);
+        setSearchParams({});
+      } else {
+        const fetchUser = async () => {
+          const { data } = await supabase.from('user_profiles').select('id, name').eq('id', userIdParam).single();
+          if (data) {
+            handleStartNewChat(data);
+            setSearchParams({});
+          }
+        };
+        fetchUser();
+      }
     }
-  }, [searchParams, conversations, setSearchParams]);
+  }, [searchParams, conversations, setSearchParams, user]);
 
   const [allMessages, setAllMessages] = useState<Message[]>([]);
 
