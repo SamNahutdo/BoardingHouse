@@ -26,6 +26,8 @@ export interface Booking {
   propertyName: string;
   guestName: string;
   guestEmail?: string;
+  guestId?: string;
+  ownerId?: string;
   checkIn: string;
   checkOut: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';

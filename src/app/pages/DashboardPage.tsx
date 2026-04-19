@@ -16,7 +16,8 @@ import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { useUser } from '../contexts/UserContext';
 import { useProperties } from '../contexts/PropertyContext';
-import { ensureSeedBookings, getStoredBookings } from '../data/bookingStorage';
+import { mockBookings, Booking } from '../data/mockData';
+import { Property } from '../data/mockData';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -130,21 +131,31 @@ export function DashboardPage() {
     { month: 'Mar', bookings: 12 },
   ];
 
-  useEffect(() => {
-    ensureSeedBookings();
-    const timerBookings = setTimeout(() => {
-      const allBookings = getStoredBookings();
-      // Only show bookings for properties owned by this owner
-      const ownerOwnedPropertiesIds = ownerProperties.map(p => p.id);
-      const relevantBookings = allBookings.filter((booking) => ownerOwnedPropertiesIds.includes(booking.propertyId));
-      setBookings(relevantBookings);
-      setLoadingBookings(false);
-    }, 500);
+  // Dynamic Stats
+  const totalEarnings = bookings.filter(b => b.status === 'completed' || b.status === 'confirmed').reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0);
+  const activeBookingsCount = bookings.filter(b => b.status === 'pending' || b.status === 'confirmed').length;
 
-    return () => {
-      clearTimeout(timerBookings);
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!user) return;
+      setLoadingBookings(true);
+      
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('ownerId', user.id)
+        .order('createdAt', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching bookings:', error);
+      } else if (data) {
+        setBookings(data as Booking[]);
+      }
+      setLoadingBookings(false);
     };
-  }, [ownerProperties.length]);
+
+    fetchBookings();
+  }, [user]);
 
   // Handlers for Add/Edit Property
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -299,14 +310,26 @@ export function DashboardPage() {
     }
   };
 
-  const handleAcceptBooking = (bookingId: string) => {
+  const handleAcceptBooking = async (bookingId: string) => {
+    const toastId = toast.loading('Confirming reservation...');
+    const { error } = await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId);
+    if (error) {
+      toast.error('Failed to update: ' + error.message, { id: toastId });
+      return;
+    }
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'confirmed' as const } : b));
-    toast.success('Booking accepted');
+    toast.success('Booking securely confirmed!', { id: toastId });
   };
 
-  const handleRejectBooking = (bookingId: string) => {
+  const handleRejectBooking = async (bookingId: string) => {
+    const toastId = toast.loading('Rejecting reservation...');
+    const { error } = await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
+    if (error) {
+      toast.error('Failed to update: ' + error.message, { id: toastId });
+      return;
+    }
     setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled' as const } : b));
-    toast.success('Booking rejected');
+    toast.success('Booking successfully rejected', { id: toastId });
   };
 
   return (
@@ -356,7 +379,7 @@ export function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
                 title="Total Earnings"
-                value={`₱${ownerStats.totalEarnings.toLocaleString()}`}
+                value={`₱${totalEarnings.toLocaleString()}`}
                 icon={DollarSign}
                 trend="+12% from last month"
                 color="green"
@@ -371,14 +394,14 @@ export function DashboardPage() {
               />
               <StatsCard
                 title="Active Bookings"
-                value={bookings.filter(b => b.status === 'confirmed').length}
+                value={activeBookingsCount}
                 icon={Calendar}
                 color="purple"
                 delay={0.2}
               />
               <StatsCard
                 title="Average Rating"
-                value={ownerStats.averageRating}
+                value={4.6} // Static for now until reviews table exists
                 icon={Star}
                 color="orange"
                 delay={0.3}
@@ -488,7 +511,10 @@ export function DashboardPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground">
-                            <User className="h-4 w-4" /> <span className="text-sm">{booking.guestName}</span>
+                            <User className="h-4 w-4" /> 
+                            <a href={`#/profile/${booking.guestId}`} className="text-sm font-medium hover:text-green-600 underline decoration-dotted underline-offset-4">
+                              {booking.guestName}
+                            </a>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Mail className="h-4 w-4" /> <span className="text-sm">{booking.guestEmail}</span>

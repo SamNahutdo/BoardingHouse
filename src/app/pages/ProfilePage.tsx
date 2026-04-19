@@ -10,21 +10,54 @@ import { useEffect, useMemo, useState } from 'react';
 import { AuthDialog } from '../components/AuthDialog';
 import { Booking } from '../data/mockData';
 import { Badge } from '../components/ui/badge';
-import { ensureSeedBookings, getStoredBookings } from '../data/bookingStorage';
+import { useParams } from 'react-router';
+import { supabase } from '../utils/supabase';
 
 export function ProfilePage() {
   const { mode, toggleMode, isAuthenticated, user } = useUser();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
 
+  const { id: profileId } = useParams<{ id: string }>();
+  const [profileUser, setProfileUser] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  // If viewing someone else, `profileId` exists. Otherwise, use logged in `user`.
+  const isViewingSelf = !profileId || profileId === user?.id;
+  const targetId = isViewingSelf ? user?.id : profileId;
+
   useEffect(() => {
-    ensureSeedBookings();
-    const allBookings = getStoredBookings();
-    const userBookings = user
-      ? allBookings.filter((booking) => booking.guestEmail === user.email)
-      : [];
-    setBookings(userBookings);
-  }, [user]);
+    const fetchProfileData = async () => {
+      if (!targetId) return;
+      setLoadingProfile(true);
+
+      // Fetch user info if it's someone else
+      if (!isViewingSelf) {
+        const { data: userData } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', targetId)
+          .single();
+        if (userData) setProfileUser(userData);
+      } else {
+        setProfileUser(user);
+      }
+
+      // Fetch their bookings history
+      const { data: bookingsData } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('guestId', targetId)
+        .order('createdAt', { ascending: false });
+
+      if (bookingsData) {
+        setBookings(bookingsData as Booking[]);
+      }
+      setLoadingProfile(false);
+    };
+
+    fetchProfileData();
+  }, [targetId, isViewingSelf, user]);
 
   const pendingBookings = useMemo(
     () => bookings.filter((booking) => booking.status === 'pending'),
@@ -39,7 +72,7 @@ export function ProfilePage() {
     [bookings],
   );
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && isViewingSelf) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md p-8">
@@ -99,21 +132,23 @@ export function ProfilePage() {
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h2 className="text-2xl font-bold mb-1">{user?.name}</h2>
+                      <h2 className="text-2xl font-bold mb-1">{profileUser?.name || profileUser?.full_name || 'Loading...'}</h2>
                       <p className="text-muted-foreground capitalize">
-                        {user?.accountType === 'owner' ? 'Property Owner' : 'Guest'}
+                        {profileUser?.accountType === 'owner' ? 'Property Owner' : 'Guest'}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
+                    {isViewingSelf && (
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <Mail className="h-4 w-4" />
-                      <span>{user?.email}</span>
+                      <span>{profileUser?.email || 'Email hidden'}</span>
                     </div>
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <Phone className="h-4 w-4" />
@@ -129,36 +164,38 @@ export function ProfilePage() {
             </Card>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="p-6 rounded-2xl">
-              <h3 className="font-semibold text-lg mb-4">Account Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-accent/50">
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <Label className="font-medium">Account Type</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {mode === 'owner'
-                          ? 'You can manage properties and bookings'
-                          : 'You can search and book properties'}
-                      </p>
+          {isViewingSelf && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="p-6 rounded-2xl">
+                <h3 className="font-semibold text-lg mb-4">Account Settings</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-accent/50">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <Label className="font-medium">Account Type</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {mode === 'owner'
+                            ? 'You can manage properties and bookings'
+                            : 'You can search and book properties'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium">
+                        {mode === 'user' ? 'Guest' : 'Owner'}
+                      </span>
+                      <Switch checked={mode === 'owner'} onCheckedChange={toggleMode} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium">
-                      {mode === 'user' ? 'Guest' : 'Owner'}
-                    </span>
-                    <Switch checked={mode === 'owner'} onCheckedChange={toggleMode} />
-                  </div>
                 </div>
-              </div>
-            </Card>
-          </motion.div>
+              </Card>
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

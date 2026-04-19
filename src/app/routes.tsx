@@ -23,6 +23,7 @@ export const router = createBrowserRouter(
       { path: 'messages', Component: MessagesPage },
       { path: 'dashboard', Component: DashboardPage },
       { path: 'profile', Component: ProfilePage },
+      { path: 'profile/:id', Component: ProfilePage },
       { path: 'map', Component: MapPage },
       { path: '*', Component: NotFoundPage },
     ],
