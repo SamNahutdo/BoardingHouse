@@ -9,6 +9,7 @@ import { useProperties } from '../contexts/PropertyContext';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Slider } from '../components/ui/slider';
+import { Switch } from '../components/ui/switch';
 import {
   Sheet,
   SheetContent,
@@ -28,6 +29,10 @@ export function SearchPage() {
   const [priceRange, setPriceRange] = useState([0, 8000]);
   const [minRating, setMinRating] = useState(0);
 
+  const [requireMoveInReady, setRequireMoveInReady] = useState(false);
+  const [requireStudentFriendly, setRequireStudentFriendly] = useState(false);
+  const [requireNearSchool, setRequireNearSchool] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       filterProperties();
@@ -35,7 +40,7 @@ export function SearchPage() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, priceRange, minRating, properties]);
+  }, [searchQuery, priceRange, minRating, properties, requireMoveInReady, requireStudentFriendly, requireNearSchool]);
 
   const filterProperties = () => {
     let filtered = properties;
@@ -59,6 +64,10 @@ export function SearchPage() {
 
     filtered = filtered.filter((p) => p.rating >= minRating);
 
+    if (requireMoveInReady) filtered = filtered.filter((p) => p.moveInReady);
+    if (requireStudentFriendly) filtered = filtered.filter((p) => p.studentFriendly);
+    if (requireNearSchool) filtered = filtered.filter((p) => p.nearSchool);
+
     setFilteredProperties(filtered);
   };
 
@@ -75,6 +84,9 @@ export function SearchPage() {
   const resetFilters = () => {
     setPriceRange([0, 8000]);
     setMinRating(0);
+    setRequireMoveInReady(false);
+    setRequireStudentFriendly(false);
+    setRequireNearSchool(false);
   };
 
   return (
@@ -145,6 +157,22 @@ export function SearchPage() {
                       value={[minRating]}
                       onValueChange={(val) => setMinRating(val[0])}
                     />
+                  </div>
+
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="text-sm font-medium text-muted-foreground">Student Filters</h4>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Move-in Ready (Bed, WiFi, Tab...)</span>
+                      <Switch checked={requireMoveInReady} onCheckedChange={setRequireMoveInReady} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Student-Friendly (Curfews, Visitors...)</span>
+                      <Switch checked={requireStudentFriendly} onCheckedChange={setRequireStudentFriendly} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Near School / Walking Distance</span>
+                      <Switch checked={requireNearSchool} onCheckedChange={setRequireNearSchool} />
+                    </div>
                   </div>
 
                   <Button variant="outline" className="w-full" onClick={resetFilters}>

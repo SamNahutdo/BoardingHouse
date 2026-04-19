@@ -18,6 +18,11 @@ export interface Property {
   roomCapacity: number;
   coordinates: [number, number];
   address?: string;
+  moveInReady?: boolean;
+  studentFriendly?: boolean;
+  nearSchool?: boolean;
+  distanceToSchool?: string;
+  curfew?: string;
 }
 
 export interface Booking {

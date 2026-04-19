@@ -42,6 +42,8 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
               {property.verified ? 'Verified' : 'Unverified'}
             </Badge>
             {fullyBooked && <Badge variant="destructive">Fully booked</Badge>}
+            {property.moveInReady && <Badge className="bg-blue-500 hover:bg-blue-600">Move-in Ready</Badge>}
+            {property.studentFriendly && <Badge className="bg-purple-500 hover:bg-purple-600">Student Friendly</Badge>}
           </div>
         </div>
 
