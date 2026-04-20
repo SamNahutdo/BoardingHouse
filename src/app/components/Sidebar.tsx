@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router';
-import { X, Home, Map, Search, User, Building2, Calendar, LayoutDashboard, PlusCircle, Users, LogOut, LogIn, MessageCircle } from 'lucide-react';
+import { X, Home, Map, Search, User, Building2, Calendar, LayoutDashboard, PlusCircle, Users, LogOut, LogIn, MessageCircle, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useUser } from '../contexts/UserContext';
 import { Button } from './ui/button';
@@ -24,12 +24,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { path: '/search', label: 'Search', icon: Search },
     { path: '/messages', label: 'Messages', icon: MessageCircle },
     { path: '/profile', label: 'Profile', icon: User },
+    { path: '/tutorial', label: 'Tutorial', icon: BookOpen },
   ];
 
   const ownerMenuItems = [
     { path: '/messages', label: 'Messages', icon: MessageCircle },
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/profile', label: 'Profile', icon: User },
+    { path: '/tutorial', label: 'Tutorial', icon: BookOpen },
   ];
 
   const menuItems = mode === 'user' ? userMenuItems : ownerMenuItems;

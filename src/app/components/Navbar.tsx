@@ -32,12 +32,14 @@ export function Navbar({ onMenuClick }: NavbarProps) {
     { path: '/search', label: 'Search' },
     { path: '/messages', label: 'Messages' },
     { path: '/profile', label: 'Profile' },
+    { path: '/tutorial', label: 'Tutorial' },
   ];
 
   const ownerMenuItems = [
     { path: '/messages', label: 'Messages' },
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/profile', label: 'Profile' },
+    { path: '/tutorial', label: 'Tutorial' },
   ];
 
   const menuItems = mode === 'user' ? userMenuItems : ownerMenuItems;

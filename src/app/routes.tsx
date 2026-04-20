@@ -8,6 +8,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { MapPage } from './pages/MapPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { TutorialPage } from './pages/TutorialPage';
 
 const basename = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
@@ -25,6 +26,7 @@ export const router = createBrowserRouter(
       { path: 'profile', Component: ProfilePage },
       { path: 'profile/:id', Component: ProfilePage },
       { path: 'map', Component: MapPage },
+      { path: 'tutorial', Component: TutorialPage },
       { path: '*', Component: NotFoundPage },
     ],
   },
