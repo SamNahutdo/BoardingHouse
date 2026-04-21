@@ -35,7 +35,7 @@ export function TutorialPage() {
           transition={{ delay: 0.2 }}
           className="text-xl text-muted-foreground"
         >
-          Step-by-step visual guides to help you get the most out of the system.
+          Watch this video guide to help you get the most out of the system.
         </motion.p>
       </div>
 
@@ -49,62 +49,34 @@ export function TutorialPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="guest" className="space-y-16 mt-8">
-          {/* Boarder Steps */}
-          <TutorialStep
-            stepNumber={1}
-            title="Finding Your Next Home"
-            description="Start by using the Map or Search page. Tap on any map pin or property card to view the detailed rooms and amenities."
-            imagePlaceholderText="Screenshot showing the Search Map and Filters"
-            icon={<Search className="h-6 w-6 text-green-600" />}
-          />
-          <TutorialStep
-            stepNumber={2}
-            title="Checking Availability & Booking"
-            description="On the property page, view the real-time calendar to check exactly which dates are blocked out. Use the payment section to calculate your down payment and click Book."
-            imagePlaceholderText="Screenshot showing the booking calendar and total price calculation"
-            icon={<BookOpen className="h-6 w-6 text-green-600" />}
-            reverse
-          />
-          <TutorialStep
-            stepNumber={3}
-            title="Messaging the Owner"
-            description="Navigate to the Messages tab to speak directly with an Owner if you have questions. For privacy, you cannot message them directly from the search page—only securely through the Messages portal."
-            imagePlaceholderText="Screenshot showing the Messages chat interface"
-            icon={<MessageCircle className="h-6 w-6 text-green-600" />}
-          />
+        <TabsContent value="guest" className="space-y-8 mt-8 flex justify-center">
+          <div className="w-full max-w-4xl aspect-video bg-black/5 rounded-2xl overflow-hidden border border-muted relative group flex items-center justify-center">
+             <video 
+               autoPlay 
+               loop 
+               muted 
+               className="w-full h-full object-cover"
+             >
+                <source src="/vids/IPTboarders.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+             </video>
+          </div>
         </TabsContent>
 
-        <TabsContent value="owner" className="space-y-16 mt-8">
-          {/* Owner Steps */}
-          <TutorialStep
-            stepNumber={1}
-            title="Publishing Your Property"
-            description="On your Dashboard, tap 'Add Property'. Fill out all exactly where the boarding house is and ensure the address includes 'Bohol'. Attach a high-quality picture!"
-            imagePlaceholderText="Screenshot showing the Add Property input forms"
-            icon={<Home className="h-6 w-6 text-green-600" />}
-          />
-          <TutorialStep
-            stepNumber={2}
-            title="Managing Virtual Rooms"
-            description="Under 'Your Boarding House', click directly on your property card to open the Room Management Window. Here you can track how many boarders you still need or lock fully occupied rooms."
-            imagePlaceholderText="Screenshot showing the Manage Rooms popup with occupancy badges"
-            icon={<Search className="h-6 w-6 text-green-600" />}
-            reverse
-          />
-          <TutorialStep
-            stepNumber={3}
-            title="Accepting Guest Bookings"
-            description="Under the 'Bookings & Guests' tab, you will see pending reservations. You can review the guest profile before deciding to accept or reject them."
-            imagePlaceholderText="Screenshot showing the Accept/Reject reservation buttons"
-            icon={<MessageCircle className="h-6 w-6 text-green-600" />}
-          />
+        <TabsContent value="owner" className="space-y-8 mt-8 flex justify-center">
+          <div className="w-full max-w-4xl aspect-video bg-black/5 rounded-2xl overflow-hidden border border-muted relative group flex items-center justify-center">
+             <video 
+               autoPlay 
+               loop 
+               muted 
+               className="w-full h-full object-cover"
+             >
+                <source src="/vids/IPTowners.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+             </video>
+          </div>
         </TabsContent>
       </Tabs>
-      
-      <div className="mt-16 text-center">
-         <Badge className="px-4 py-1 text-sm bg-accent text-muted-foreground border-none">Images will be patched in by the system admin</Badge>
-      </div>
     </div>
   );
 }

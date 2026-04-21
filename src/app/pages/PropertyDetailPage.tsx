@@ -126,10 +126,6 @@ export function PropertyDetailPage() {
 
   const bookingDisabled = isFullyBooked || (userAlreadyBooked && !userBookedThisProperty);
 
-  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${property.coordinates[0]},${property.coordinates[1]}`,
-  )}`;
-
   const handleBook = () => {
     if (!isAuthenticated || !user) {
       setAuthDialogOpen(true);
@@ -351,17 +347,23 @@ export function PropertyDetailPage() {
               <Card className="p-6 rounded-2xl">
                 <h3 className="font-semibold text-xl mb-4">Boarding House Owner</h3>
                 <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2 p-3 bg-accent/30 rounded-xl">
-                     <User className="h-5 w-5 text-muted-foreground" />
-                     <div className="flex flex-col">
-                       <span className="text-xs text-muted-foreground font-medium">Owned By</span>
-                       <span 
-                         onClick={() => navigate(`/profile/${property.ownerId}`)} 
-                         className="text-sm font-semibold hover:text-green-600 underline cursor-pointer"
-                       >
-                         View Owner Profile
-                       </span>
+                  <div className="flex items-center justify-between p-3 bg-accent/30 rounded-xl">
+                     <div className="flex items-center gap-2">
+                       <User className="h-5 w-5 text-muted-foreground" />
+                       <div className="flex flex-col">
+                         <span className="text-xs text-muted-foreground font-medium">Owned By</span>
+                         <span 
+                           onClick={() => navigate(`/profile/${property.ownerId}`)} 
+                           className="text-sm font-semibold hover:text-green-600 underline cursor-pointer"
+                         >
+                           View Owner Profile
+                         </span>
+                       </div>
                      </div>
+                     <Button variant="secondary" size="sm" onClick={() => navigate('/messages')} className="rounded-xl">
+                       <MessageCircle className="h-4 w-4 mr-2" />
+                       Message
+                     </Button>
                   </div>
                 </div>
                 
@@ -379,12 +381,6 @@ export function PropertyDetailPage() {
                       <Marker position={[property.coordinates[0], property.coordinates[1]]} icon={getIcon()} />
                     </MapContainer>
                 </div>
-                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="w-full inline-block mt-3">
-                  <Button variant="outline" className="w-full rounded-xl">
-                    <Navigation className="h-4 w-4 mr-2" />
-                    Open in Google Maps
-                  </Button>
-                </a>
               </Card>
             </motion.div>
 

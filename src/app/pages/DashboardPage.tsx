@@ -112,9 +112,13 @@ export function DashboardPage() {
   // Room Management State
   const [roomManagementOpen, setRoomManagementOpen] = useState(false);
   const [selectedPropertyForRooms, setSelectedPropertyForRooms] = useState<Property | null>(null);
+  const [isAddingRoom, setIsAddingRoom] = useState(false);
+  const [newRoomData, setNewRoomData] = useState({ name: '', capacity: '', features: '' });
 
   const handleManageRooms = (property: Property) => {
     setSelectedPropertyForRooms(property);
+    setIsAddingRoom(false);
+    setNewRoomData({ name: '', capacity: '', features: '' });
     setRoomManagementOpen(true);
   };
   
@@ -712,6 +716,7 @@ export function DashboardPage() {
                      <div>
                        <h4 className="font-semibold">{room.name}</h4>
                        <p className="text-xs text-muted-foreground">Capacity: {room.capacity} boarders</p>
+                       {(room as any).features && <p className="text-xs text-green-600">{(room as any).features}</p>}
                      </div>
                      <div className="flex items-center gap-2">
                        {room.occupants >= room.capacity ? (
@@ -724,9 +729,35 @@ export function DashboardPage() {
                 ))
              )}
           </div>
-          <DialogFooter>
-             <Button variant="outline" className="w-full" onClick={() => toast.success("Feature in development!")}><Plus className="w-4 h-4 mr-2" /> Add New Room</Button>
-          </DialogFooter>
+          <div className="border-t pt-4 mt-2">
+             {isAddingRoom ? (
+               <div className="space-y-3">
+                 <h4 className="font-semibold text-sm">Add New Room Options</h4>
+                 <Input placeholder="Room Name (e.g. Front Room)" value={newRoomData.name} onChange={(e) => setNewRoomData({...newRoomData, name: e.target.value})} />
+                 <Input type="number" placeholder="Capacity (e.g. 4)" value={newRoomData.capacity} onChange={(e) => setNewRoomData({...newRoomData, capacity: e.target.value})} />
+                 <Input placeholder="Room Features (e.g. Own CR, Window, Cabinet)" value={newRoomData.features} onChange={(e) => setNewRoomData({...newRoomData, features: e.target.value})} />
+                 <div className="flex gap-2">
+                   <Button className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={async () => {
+                      if (!newRoomData.name) return toast.error("Name required");
+                      if (selectedPropertyForRooms) {
+                         const updatedProperty = {
+                            ...selectedPropertyForRooms,
+                            rooms: [...(selectedPropertyForRooms.rooms || []), { id: Date.now().toString(), name: newRoomData.name, capacity: Number(newRoomData.capacity) || 1, occupants: 0, features: newRoomData.features }]
+                         };
+                         await updateProperty(selectedPropertyForRooms.id, updatedProperty);
+                         setSelectedPropertyForRooms(updatedProperty as Property);
+                         setIsAddingRoom(false);
+                         setNewRoomData({ name: '', capacity: '', features: '' });
+                         toast.success("Room with features added successfully!");
+                      }
+                   }}>Save Room</Button>
+                   <Button variant="outline" className="w-full" onClick={() => setIsAddingRoom(false)}>Cancel</Button>
+                 </div>
+               </div>
+             ) : (
+               <Button variant="outline" className="w-full" onClick={() => setIsAddingRoom(true)}><Plus className="w-4 h-4 mr-2" /> Add New Room</Button>
+             )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

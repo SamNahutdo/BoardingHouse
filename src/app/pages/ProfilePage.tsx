@@ -10,8 +10,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { AuthDialog } from '../components/AuthDialog';
 import { Booking } from '../data/mockData';
 import { Badge } from '../components/ui/badge';
-import { useParams } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { supabase } from '../utils/supabase';
+import { toast } from 'sonner';
 
 export function ProfilePage() {
   const { mode, toggleMode, isAuthenticated, user } = useUser();
@@ -19,6 +20,7 @@ export function ProfilePage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   const { id: profileId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
@@ -58,6 +60,17 @@ export function ProfilePage() {
 
     fetchProfileData();
   }, [targetId, isViewingSelf, user]);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    const toastId = toast.loading('Cancelling booking...');
+    const { error } = await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
+    if (error) {
+      toast.error('Failed to cancel: ' + error.message, { id: toastId });
+      return;
+    }
+    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'cancelled' as const } : b));
+    toast.success('Booking cancelled successfully', { id: toastId });
+  };
 
   const pendingBookings = useMemo(
     () => bookings.filter((booking) => booking.status === 'pending'),
@@ -137,10 +150,19 @@ export function ProfilePage() {
                         {profileUser?.accountType === 'owner' ? 'Property Owner' : 'Guest'}
                       </p>
                     </div>
-                    {isViewingSelf && (
+                    {isViewingSelf ? (
                       <Button variant="outline" size="sm">
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => navigate('/messages')} 
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Message
                       </Button>
                     )}
                   </div>
@@ -187,9 +209,14 @@ export function ProfilePage() {
                     <div key={booking.id} className="rounded-xl bg-accent/40 p-4">
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div className="font-medium">{booking.propertyName}</div>
-                        <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-                          Pending
-                        </Badge>
+                        <div className="flex gap-2 items-center">
+                          <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                            Pending
+                          </Badge>
+                          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-950 h-7 text-xs" onClick={() => handleCancelBooking(booking.id)}>
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {booking.description || 'Pending reservation awaiting completion.'}
@@ -228,11 +255,16 @@ export function ProfilePage() {
                             {new Date(booking.checkOut).toLocaleDateString()}
                           </div>
                         </div>
-                        <Badge variant="secondary">
-                          {booking.paymentMethod === 'online'
-                            ? 'Online payment'
-                            : 'Pay on-site'}
-                        </Badge>
+                        <div className="flex gap-2 items-center">
+                          <Badge variant="secondary">
+                            {booking.paymentMethod === 'online'
+                              ? 'Online payment'
+                              : 'Pay on-site'}
+                          </Badge>
+                          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-950 h-7 text-xs" onClick={() => handleCancelBooking(booking.id)}>
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {booking.description || 'No booking description provided.'}
