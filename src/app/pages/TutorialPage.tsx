@@ -57,7 +57,7 @@ export function TutorialPage() {
                muted 
                className="w-full h-full object-cover"
              >
-                <source src="/vids/IPTboarders.mp4" type="video/mp4" />
+                <source src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/vids/IPTboarders.mp4`} type="video/mp4" />
                 Your browser does not support the video tag.
              </video>
           </div>
@@ -71,7 +71,7 @@ export function TutorialPage() {
                muted 
                className="w-full h-full object-cover"
              >
-                <source src="/vids/IPTowners.mp4" type="video/mp4" />
+                <source src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/vids/IPTowners.mp4`} type="video/mp4" />
                 Your browser does not support the video tag.
              </video>
           </div>
