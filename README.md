@@ -29,38 +29,38 @@ A web-based platform designed to help students in Bohol find safe, affordable, a
 ## ⚙️ How to Setup
 
 1. Clone the repository:
-
+```bash 
 git clone https://github.com/SamNahutdo/BoardingHouse.git
-
+```
 
 2. Go to project folder:
-
+```bash 
 cd BoardingHouse
-
+```
 
 3. Install dependencies:
-
+```bash 
 npm install
-
+```
 
 ---
 
 ## ▶️ How to Run
 
 Start development server:
-
+```bash 
 npm start
-
+```
 
 Build project:
-
+```bash 
 npm run build
-
+```
 
 Deploy:
-
-npm run deploy
-
+```bash 
+npm run dev
+```
 
 ---
 
