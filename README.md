@@ -1,4 +1,7 @@
-﻿# 🏠 Boarding House Finder Web App (Bohol)
+![Alt Text](user.png)
+ ![Alt Text](owner.png)
+ 
+ # 🏠 Boarding House Finder Web App (Bohol)
 
 A web-based platform designed to help students in Bohol find safe, affordable, and verified boarding houses. The system connects students and boarding house owners in one centralized platform with search, map, messaging, and booking features.
 
