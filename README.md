@@ -1,4 +1,4 @@
-![Alt Text](user.png)
+![Alt Text](user)
  ![Alt Text](owner.png)
  
  # 🏠 Boarding House Finder Web App (Bohol)
