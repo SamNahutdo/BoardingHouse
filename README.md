@@ -1,7 +1,7 @@
-# USER PANEL
+# USER
 ![Alt Text](user)
 
-# OWNER DASHBOARD
+# OWNER 
 ![Alt Text](owner.png)
  
  # 🏠 Boarding House Finder Web App (Bohol)
